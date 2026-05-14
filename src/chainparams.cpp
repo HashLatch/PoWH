@@ -116,7 +116,7 @@ bool CChainParams::CSVEnabled() const{
 class CMainParams : public CChainParams {
 public:
     CMainParams() {
-        strNetworkID = "main";
+        strNetworkID = "powh-main";
         consensus.nSubsidyHalvingInterval = 2100000;  //~ 4 yrs at 1 min block time
         consensus.nBIP34Enabled = true;
         consensus.nBIP65Enabled = true; // 000000000000000004c2b624ed5d7756c508d90fd0da2c7c679febfa6c4735f0
@@ -174,11 +174,11 @@ public:
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 32-bit integer with any alignment.
          */
-        pchMessageStart[0] = 0x52; // R
-        pchMessageStart[1] = 0x41; // A
-        pchMessageStart[2] = 0x56; // V
-        pchMessageStart[3] = 0x4e; // N
-        nDefaultPort = 8767;
+       pchMessageStart[0] = 0x50; // P
+       pchMessageStart[1] = 0x57; // W
+       pchMessageStart[2] = 0x48; // H
+       pchMessageStart[3] = 0x58; // X
+        nDefaultPort = 18767;
         nPruneAfterHeight = 100000;
 
         genesis = CreateGenesisBlock(1514999494, 25023712, 0x1e00ffff, 4, 5000 * COIN);
@@ -192,11 +192,11 @@ public:
         vSeeds.emplace_back("seed-raven.ravencoin.com", false);
         vSeeds.emplace_back("seed-raven.ravencoin.org", false);
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,60);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,122);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,128);
-        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
-        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,88);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,33);
+        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,188);
+        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0x26, 0x76};
+        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0x45, 0x67};
 
         // Raven BIP44 cointype in mainnet is '175'
         nExtCoinType = 175;
