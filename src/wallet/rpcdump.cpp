@@ -1,3 +1,5 @@
+#define CLIENT_BUILD "1.0.0-PoWH"
+
 // Copyright (c) 2009-2016 The Bitcoin Core developers
 // Copyright (c) 2017-2021 The Raven Core developers
 // Distributed under the MIT software license, see the accompanying

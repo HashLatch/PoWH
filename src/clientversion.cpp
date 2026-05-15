@@ -1,3 +1,11 @@
+#define BUILD_SUFFIX "-PoWH"
+
+#include <vector>
+#ifndef DO_STRINGIZE
+#define DO_STRINGIZE(X) #X
+#define STRINGIZE(X) DO_STRINGIZE(X)
+#endif
+
 // Copyright (c) 2012-2016 The Bitcoin Core developers
 // Copyright (c) 2017-2021 The Raven Core developers
 // Distributed under the MIT software license, see the accompanying

@@ -620,7 +620,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
 
         uint256 txid = ParseHashO(o, "txid");
 
-        const UniValue& vout_v = find_value(o, "vout");
+        const UniValue vout_v = find_value(o, "vout");
         if (!vout_v.isNum())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing vout key");
         int nOutput = vout_v.get_int();
@@ -643,7 +643,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
         }
 
         // set the sequence number if passed in the parameters object
-        const UniValue& sequenceObj = find_value(o, "sequence");
+        const UniValue sequenceObj = find_value(o, "sequence");
         if (sequenceObj.isNum()) {
             int64_t seqNr64 = sequenceObj.get_int64();
             if (seqNr64 < 0 || seqNr64 > std::numeric_limits<uint32_t>::max()) {
@@ -702,27 +702,27 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                     auto assetData = asset_.getValues()[0].get_obj();
 
                     /**-------Process the assets data-------**/
-                    const UniValue& asset_name = find_value(assetData, "asset_name");
+                    const UniValue asset_name = find_value(assetData, "asset_name");
                     if (!asset_name.isStr())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset data for key: asset_name");
 
-                    const UniValue& asset_quantity = find_value(assetData, "asset_quantity");
+                    const UniValue asset_quantity = find_value(assetData, "asset_quantity");
                     if (!asset_quantity.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset data for key: asset_quantity");
 
-                    const UniValue& units = find_value(assetData, "units");
+                    const UniValue units = find_value(assetData, "units");
                     if (!units.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset metadata for key: units");
 
-                    const UniValue& reissuable = find_value(assetData, "reissuable");
+                    const UniValue reissuable = find_value(assetData, "reissuable");
                     if (!reissuable.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset metadata for key: reissuable");
 
-                    const UniValue& has_ipfs = find_value(assetData, "has_ipfs");
+                    const UniValue has_ipfs = find_value(assetData, "has_ipfs");
                     if (!has_ipfs.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset metadata for key: has_ipfs");
 // TODO, if we decide to remove the consensus check https://github.com/RavenProject/Ravencoin/issues/675, remove or add the code (requires consensus change)
-//                    const UniValue& custom_owner_address = find_value(assetData, "custom_owner_address");
+//                    const UniValue custom_owner_address = find_value(assetData, "custom_owner_address");
 //                    if (!custom_owner_address.isNull()) {
 //                        CTxDestination dest = DecodeDestination(custom_owner_address.get_str());
 //                        if (!IsValidDestination(dest)) {
@@ -785,15 +785,15 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                     auto assetData = asset_.getValues()[0].get_obj();
 
                     /**-------Process the assets data-------**/
-                    const UniValue& root_name = find_value(assetData, "root_name");
+                    const UniValue root_name = find_value(assetData, "root_name");
                     if (!root_name.isStr())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset data for key: root_name");
 
-                    const UniValue& asset_tags = find_value(assetData, "asset_tags");
+                    const UniValue asset_tags = find_value(assetData, "asset_tags");
                     if (!asset_tags.isArray() || asset_tags.size() < 1)
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset data for key: asset_tags");
 
-                    const UniValue& ipfs_hashes = find_value(assetData, "ipfs_hashes");
+                    const UniValue ipfs_hashes = find_value(assetData, "ipfs_hashes");
                     if (!ipfs_hashes.isNull()) {
                         if (!ipfs_hashes.isArray() || ipfs_hashes.size() != asset_tags.size()) {
                             if (!ipfs_hashes.isNum())
@@ -851,15 +851,15 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                     CReissueAsset reissueObj;
 
                     /**-------Process the reissue data-------**/
-                    const UniValue& asset_name = find_value(reissueData, "asset_name");
+                    const UniValue asset_name = find_value(reissueData, "asset_name");
                     if (!asset_name.isStr())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing reissue data for key: asset_name");
 
-                    const UniValue& asset_quantity = find_value(reissueData, "asset_quantity");
+                    const UniValue asset_quantity = find_value(reissueData, "asset_quantity");
                     if (!asset_quantity.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing reissue data for key: asset_quantity");
 
-                    const UniValue& reissuable = find_value(reissueData, "reissuable");
+                    const UniValue reissuable = find_value(reissueData, "reissuable");
                     if (!reissuable.isNull()) {
                         if (!reissuable.isNum())
                             throw JSONRPCError(RPC_INVALID_PARAMETER,
@@ -873,7 +873,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                         reissueObj.nReissuable = int8_t(nReissuable);
                     }
 
-                    const UniValue& ipfs_hash = find_value(reissueData, "ipfs_hash");
+                    const UniValue ipfs_hash = find_value(reissueData, "ipfs_hash");
                     if (!ipfs_hash.isNull()) {
                         if (!ipfs_hash.isStr())
                             throw JSONRPCError(RPC_INVALID_PARAMETER,
@@ -882,7 +882,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                     }
 
                     bool fHasOwnerChange = false;
-                    const UniValue& owner_change_address = find_value(reissueData, "owner_change_address");
+                    const UniValue owner_change_address = find_value(reissueData, "owner_change_address");
                     if (!owner_change_address.isNull()) {
                         if (!owner_change_address.isStr())
                             throw JSONRPCError(RPC_INVALID_PARAMETER,
@@ -1024,32 +1024,32 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                     auto assetData = asset_.getValues()[0].get_obj();
 
                     /**-------Process the assets data-------**/
-                    const UniValue& asset_name = find_value(assetData, "asset_name");
+                    const UniValue asset_name = find_value(assetData, "asset_name");
                     if (!asset_name.isStr())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset data for key: asset_name");
 
-                    const UniValue& asset_quantity = find_value(assetData, "asset_quantity");
+                    const UniValue asset_quantity = find_value(assetData, "asset_quantity");
                     if (!asset_quantity.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset data for key: asset_quantity");
 
-                    const UniValue& verifier_string = find_value(assetData, "verifier_string");
+                    const UniValue verifier_string = find_value(assetData, "verifier_string");
                     if (!verifier_string.isStr())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset_data for key: verifier_string");
 
-                    const UniValue& units = find_value(assetData, "units");
+                    const UniValue units = find_value(assetData, "units");
                     if (!units.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset metadata for key: units");
 
-                    const UniValue& reissuable = find_value(assetData, "reissuable");
+                    const UniValue reissuable = find_value(assetData, "reissuable");
                     if (!reissuable.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset metadata for key: reissuable");
 
-                    const UniValue& has_ipfs = find_value(assetData, "has_ipfs");
+                    const UniValue has_ipfs = find_value(assetData, "has_ipfs");
                     if (!has_ipfs.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset metadata for key: has_ipfs");
 
                     bool fHasOwnerChange = false;
-                    const UniValue& owner_change_address = find_value(assetData, "owner_change_address");
+                    const UniValue owner_change_address = find_value(assetData, "owner_change_address");
                     if (!owner_change_address.isNull()) {
                         if (!owner_change_address.isStr())
                             throw JSONRPCError(RPC_INVALID_PARAMETER,
@@ -1257,15 +1257,15 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                     auto assetData = asset_.getValues()[0].get_obj();
 
                     /**-------Process the assets data-------**/
-                    const UniValue& asset_name = find_value(assetData, "asset_name");
+                    const UniValue asset_name = find_value(assetData, "asset_name");
                     if (!asset_name.isStr())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset data for key: asset_name");
 
-                    const UniValue& asset_quantity = find_value(assetData, "asset_quantity");
+                    const UniValue asset_quantity = find_value(assetData, "asset_quantity");
                     if (!asset_quantity.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset data for key: asset_quantity");
 
-                    const UniValue& has_ipfs = find_value(assetData, "has_ipfs");
+                    const UniValue has_ipfs = find_value(assetData, "has_ipfs");
                     if (!has_ipfs.isNum())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing asset metadata for key: has_ipfs");
 
@@ -1284,7 +1284,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                     bool isSubQualifier = IsAssetNameASubQualifier(strAssetName);
 
                     bool fHasRootChange = false;
-                    const UniValue& root_change_address = find_value(assetData, "root_change_address");
+                    const UniValue root_change_address = find_value(assetData, "root_change_address");
                     if (!root_change_address.isNull()) {
                         if (!isSubQualifier)
                             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, root_change_address only allowed when issuing a subqualifier.");
@@ -1302,7 +1302,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, qualifiers are only allowed to be issued in quantities between 1 and 10.");
 
                     CAmount changeQty = COIN;
-                    const UniValue& change_qty = find_value(assetData, "change_quantity");
+                    const UniValue change_qty = find_value(assetData, "change_quantity");
                     if (!change_qty.isNull()) {
                         if (!change_qty.isNum() || AmountFromValue(change_qty) < COIN)
                             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, change_amount must be a positive number");
@@ -1356,14 +1356,14 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                         throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, the format must follow { \"[tag|untag]_addresses\": {\"key\": value}, ...}"));
                     auto assetData = asset_.getValues()[0].get_obj();
 
-                    const UniValue& qualifier = find_value(assetData, "qualifier");
+                    const UniValue qualifier = find_value(assetData, "qualifier");
                     if (!qualifier.isStr())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing data for key: qualifier");
                     std::string strQualifier = qualifier.get_str();
                     if (!IsAssetNameAQualifier(strQualifier))
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, a valid qualifier name must be provided, e.g. #MY_QUALIFIER");
 
-                    const UniValue& addresses = find_value(assetData, "addresses");
+                    const UniValue addresses = find_value(assetData, "addresses");
                     if (!addresses.isArray() || addresses.size() < 1 || addresses.size() > 10)
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, value for key address must be an array of size 1 to 10");
                     for (int i = 0; i < (int)addresses.size(); i++) {
@@ -1372,7 +1372,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                     }
 
                     CAmount changeQty = COIN;
-                    const UniValue& change_qty = find_value(assetData, "change_quantity");
+                    const UniValue change_qty = find_value(assetData, "change_quantity");
                     if (!change_qty.isNull()) {
                         if (!change_qty.isNum() || AmountFromValue(change_qty) < COIN)
                             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, change_amount must be a positive number");
@@ -1401,14 +1401,14 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                         throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, the format must follow { \"[freeze|unfreeze]_addresses\": {\"key\": value}, ...}"));
                     auto assetData = asset_.getValues()[0].get_obj();
 
-                    const UniValue& asset_name = find_value(assetData, "asset_name");
+                    const UniValue asset_name = find_value(assetData, "asset_name");
                     if (!asset_name.isStr())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing data for key: asset_name");
                     std::string strAssetName = asset_name.get_str();
                     if (!IsAssetNameAnRestricted(strAssetName))
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, a valid restricted asset name must be provided, e.g. $MY_ASSET");
 
-                    const UniValue& addresses = find_value(assetData, "addresses");
+                    const UniValue addresses = find_value(assetData, "addresses");
                     if (!addresses.isArray() || addresses.size() < 1 || addresses.size() > 10)
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, value for key address must be an array of size 1 to 10");
                     for (int i = 0; i < (int)addresses.size(); i++) {
@@ -1438,7 +1438,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
                         throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, the format must follow { \"[freeze|unfreeze]_asset\": {\"key\": value}, ...}"));
                     auto assetData = asset_.getValues()[0].get_obj();
 
-                    const UniValue& asset_name = find_value(assetData, "asset_name");
+                    const UniValue asset_name = find_value(assetData, "asset_name");
                     if (!asset_name.isStr())
                         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, missing data for key: asset_name");
                     std::string strAssetName = asset_name.get_str();

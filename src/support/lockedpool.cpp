@@ -7,7 +7,7 @@
 #include "support/cleanse.h"
 
 #if defined(HAVE_CONFIG_H)
-#include "config/raven-config.h"
+#include "config/powh-config.h"
 #endif
 
 #ifdef WIN32
@@ -28,6 +28,7 @@
 #endif
 
 #include <algorithm>
+#include <stdexcept>
 
 LockedPoolManager* LockedPoolManager::_instance = nullptr;
 std::once_flag LockedPoolManager::init_flag;

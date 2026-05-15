@@ -1,3 +1,16 @@
+#undef CLIENT_VERSION_MAJOR
+#undef CLIENT_VERSION_MINOR
+#undef CLIENT_VERSION_REVISION
+#undef COPYRIGHT_YEAR
+#include <string>
+std::string FormatFullVersion() { return "1.0.0-PoWH"; }
+
+class CChainParams;
+namespace boost { class thread_group; }
+class CScheduler;
+
+#include "miner.h"
+#include "clientversion.h"
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Core developers
 // Copyright (c) 2017-2021 The Raven Core developers
@@ -468,7 +481,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-autofixmempool", strprintf(_("When set, if the CreateNewBlock fails because of a transaction. The mempool will be cleared. (default: %d)"), false));
     strUsage += HelpMessageOpt("-bypassdownload", strprintf(_("When set, if the chain is in initialblockdownload the getblocktemplate rpc call will still return block data (default: %d)"), false));
 #ifndef WIN32
-    strUsage += HelpMessageOpt("-pid=<file>", strprintf(_("Specify pid file (default: %s)"), POWH_PID_FILENAME));
+    strUsage += HelpMessageOpt("-pid=<file>", strprintf(_("Specify pid file (default: %s)"), "powhd.pid"));
 #endif
     strUsage += HelpMessageOpt("-prune=<n>", strprintf(_("Reduce storage requirements by enabling pruning (deleting) of old blocks. This allows the pruneblockchain RPC to be called to delete specific blocks, and enables automatic pruning of old blocks if a target size in MiB is provided. This mode is incompatible with -txindex and -rescan. "
             "Warning: Reverting this setting requires re-downloading the entire blockchain. "
@@ -1383,7 +1396,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     bool fGenerate = gArgs.GetBoolArg("-regtest", false) ? false : DEFAULT_GENERATE;
     // Generate coins in the background
-    GeneratePoWH(fGenerate, gArgs.GetArg("-genproclimit", DEFAULT_GENERATE_THREADS), chainparams);
+    // Wyłączone wewnętrzne GeneratePoWH
 
     // ********************************************************* Step 6: network initialization
     // Note that we absolutely cannot open any actual connections
@@ -1405,7 +1418,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
             return InitError(strprintf(_("User Agent comment (%s) contains unsafe characters."), cmt));
         uacomments.push_back(cmt);
     }
-    strSubVersion = FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, uacomments);
+    strSubVersion = std::string("/PoWH:1.0.0/");
     if (strSubVersion.size() > MAX_SUBVERSION_LENGTH) {
         return InitError(strprintf(_("Total length of network version string (%i) exceeds maximum length (%i). Reduce the number or size of uacomments."),
             strSubVersion.size(), MAX_SUBVERSION_LENGTH));

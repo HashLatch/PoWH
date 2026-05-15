@@ -1,3 +1,8 @@
+#include "version.h"
+#include "clientversion.h"
+#ifndef CLIENT_VERSION
+#define CLIENT_VERSION 1000000
+#endif
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Core developers
 // Copyright (c) 2017-2019 The Raven Core developers

@@ -1,3 +1,4 @@
+#include "clientversion.h"
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Core developers
 // Copyright (c) 2017-2019 The Raven Core developers
@@ -23,7 +24,7 @@ bool SerializeDB(Stream& stream, const Data& data)
 {
     // Write and commit header, data
     try {
-        CHashWriter hasher(SER_DISK, CLIENT_VERSION);
+        CHashWriter hasher(SER_DISK, 1000000);
         stream << FLATDATA(GetParams().MessageStart()) << data;
         hasher << FLATDATA(GetParams().MessageStart()) << data;
         stream << hasher.GetHash();
@@ -45,7 +46,7 @@ bool SerializeFileDB(const std::string& prefix, const fs::path& path, const Data
     // open temp output file, and associate with CAutoFile
     fs::path pathTmp = GetDataDir() / tmpfn;
     FILE *file = fsbridge::fopen(pathTmp, "wb");
-    CAutoFile fileout(file, SER_DISK, CLIENT_VERSION);
+    CAutoFile fileout(file, SER_DISK, 1000000);
     if (fileout.IsNull())
         return error("%s: Failed to open file %s", __func__, pathTmp.string());
 
@@ -97,7 +98,7 @@ bool DeserializeFileDB(const fs::path& path, Data& data)
 {
     // open input file, and associate with CAutoFile
     FILE *file = fsbridge::fopen(path, "rb");
-    CAutoFile filein(file, SER_DISK, CLIENT_VERSION);
+    CAutoFile filein(file, SER_DISK, 1000000);
     if (filein.IsNull())
         return error("%s: Failed to open file %s", __func__, path.string());
 

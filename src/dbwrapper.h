@@ -1,3 +1,8 @@
+#include "version.h"
+#include "clientversion.h"
+#ifndef CLIENT_VERSION
+#define CLIENT_VERSION 1000000
+#endif
 // Copyright (c) 2012-2016 The Bitcoin Core developers
 // Copyright (c) 2017-2019 The Raven Core developers
 // Distributed under the MIT software license, see the accompanying
