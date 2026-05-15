@@ -13,7 +13,7 @@ bool IsBountyOpReturn(const CScript& script)
 
 std::string BuildBountyMetadata(const std::string& targetHash, int deadlineHeight)
 {
-    return std::string("HLB1|SHA256|") + targetHash + "|" + std::to_string(deadlineHeight);
+    return std::string("HLC1|SHA256|") + targetHash + "|" + std::to_string(deadlineHeight);
 }
 
 bool ParseBountyMetadata(const CScript& script, BountyEntry& entry)
@@ -29,7 +29,7 @@ bool ParseBountyMetadata(const CScript& script, BountyEntry& entry)
     if (!script.GetOp(pc, opcode, data)) return false;
 
     std::string metadata(data.begin(), data.end());
-    if (metadata.find("HLB1|") != 0) return false;
+    if (metadata.find("HLC1|") != 0) return false;
 
     std::vector<std::string> parts;
     std::stringstream ss(metadata);
@@ -38,7 +38,7 @@ bool ParseBountyMetadata(const CScript& script, BountyEntry& entry)
         parts.push_back(item);
     }
 
-    if (parts[0] != "HLB1") return false;
+    if (parts[0] != "HLC1") return false;
     if (parts[1] != "SHA256") return false;
     if (parts[2].size() != 64 || !IsHex(parts[2])) return false;
     if (parts[3].size() > 10) return false;
