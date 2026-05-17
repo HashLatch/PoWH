@@ -291,7 +291,7 @@ public:
 
         uint32_t nGenesisTime = 1747234800;
 
-        genesis = CreateGenesisBlock(nGenesisTime, 543211, 0x1e00ffff, 2, 5000 * COIN);
+        genesis = CreateGenesisBlock(1524179366, 1, 0x207fffff, 4, 5000 * COIN);
         consensus.hashGenesisBlock = genesis.GetX16RHash();
 
 //         assert(consensus.hashGenesisBlock == uint256S("0x0000006b444bc2f2ffe627be9d9e7e7a0730000870ef6eb6da46c8eae389df90"));
