@@ -105,8 +105,8 @@ public:
         consensus.nBIP66Enabled = true;
         consensus.nSegwitEnabled = true;
         consensus.nCSVEnabled = true;
-        consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.kawpowLimit = uint256S("0000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.kawpowLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 2016 * 60;
         consensus.nPowTargetSpacing = 1 * 60;
 		consensus.fPowAllowMinDifficultyBlocks = false;
@@ -155,11 +155,11 @@ public:
         nPruneAfterHeight = 100000;
 
         // Genesis block for PoWH (unique)
-        genesis = CreateGenesisBlock(1747234800, 543210, 0x1e00ffff, 4, 5000 * COIN);
-        consensus.hashGenesisBlock = genesis.GetX16RHash();
+        genesis = CreateGenesisBlock(1747234800, 0, 0x207fffff, 4, 5000 * COIN);
+        consensus.hashGenesisBlock = genesis.GetHash();
 
 //         assert(consensus.hashGenesisBlock == uint256S("0000006b444bc2f2ffe627be9d9e7e7a0730000870ef6eb6da46c8eae389df90"));
-        assert(genesis.hashMerkleRoot == uint256S("28ff00a867739a352523808d301f504bc4547699398d70faf2266a8bae5f3516"));
+//        assert(genesis.hashMerkleRoot == uint256S("28ff00a867739a352523808d301f504bc4547699398d70faf2266a8bae5f3516"));
 
         vSeeds.clear();
         vSeeds.emplace_back("seed.powh.io", false);

@@ -22,6 +22,7 @@
 #include "pow.h"
 #include "primitives/transaction.h"
 #include "script/standard.h"
+#include "base58.h"
 #include "timedata.h"
 #include "txmempool.h"
 #include "util.h"
@@ -174,9 +175,22 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     CMutableTransaction coinbaseTx;
     coinbaseTx.vin.resize(1);
     coinbaseTx.vin[0].prevout.SetNull();
-    coinbaseTx.vout.resize(1);
+
+    // 2% dev fee goes to dev wallet
+    CAmount blockReward = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
+    CAmount devFee = blockReward * 2 / 100;
+    CAmount minerReward = blockReward - devFee;
+
+    // Dev fee output
+    CTxDestination devDest = DecodeDestination("cXgJpaAwQu7VZLkS6Berw3VTuLNLAMTH8d");
+    CScript devScript = GetScriptForDestination(devDest);
+
+    coinbaseTx.vout.resize(2);
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
-    coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
+    coinbaseTx.vout[0].nValue = minerReward;
+    coinbaseTx.vout[1].scriptPubKey = devScript;
+    coinbaseTx.vout[1].nValue = devFee;
+
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus());

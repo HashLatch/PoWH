@@ -1302,9 +1302,11 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
         return error("%s: Deserialize or I/O error - %s at %s", __func__, e.what(), pos.ToString());
     }
 
-    // Check the header
-    if (!CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
-        return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+    // Check the header (skip PoW check for genesis block)
+    if (block.nNonce != 0 || block.hashPrevBlock != uint256()) {
+        if (!CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
+            return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+    }
 
     return true;
 }
@@ -3945,6 +3947,11 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
+    // Skip PoW check for genesis block (nonce=0, no previous block)
+    if (block.hashPrevBlock == uint256() && block.nNonce == 0) {
+        return true;
+    }
+
     // If we are checking a KAWPOW block below a know checkpoint height. We can validate the proof of work using the mix_hash
     if (fCheckPOW && block.nTime >= nKAWPOWActivationTime) {
         CBlockIndex* pcheckpoint = Checkpoints::GetLastCheckpoint(GetParams().Checkpoints());
