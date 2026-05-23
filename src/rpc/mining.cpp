@@ -779,12 +779,28 @@ static UniValue getkawpowhash(const JSONRPCRequest& request) {
     std::string hex_nonce = request.params[2].get_str();
     uint32_t nHeight = request.params[3].get_uint();
 
+    // Strip 0x prefix if present (stratum sends nonce as 0x...)
+    if (hex_nonce.size() >= 2 && hex_nonce[0] == '0' && (hex_nonce[1] == 'x' || hex_nonce[1] == 'X'))
+        hex_nonce = hex_nonce.substr(2);
+
     uint64_t nNonce;
     if (!ParseUInt64(hex_nonce, &nNonce, 16))
         throw JSONRPCError(RPC_INVALID_PARAMS, "Invalid nonce hex string");
 
-    if (nHeight > (uint32_t)chainActive.Height() + 10)
-        throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block height is to large");
+    // Allow up to chainActive.Height() + 100 (protects against crash at genesis height=0)
+    int chainHeight = chainActive.Height();
+    if (chainHeight < 0) chainHeight = 0;
+    if (nHeight > (uint32_t)(chainHeight + 100))
+        throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block height is too large");
+
+    // Strip 0x prefix from hashes if present (stratum sends with 0x prefix)
+    auto strip0x = [](std::string s) -> std::string {
+        if (s.size() >= 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
+            return s.substr(2);
+        return s;
+    };
+    str_header_hash = strip0x(str_header_hash);
+    mix_hash = strip0x(mix_hash);
 
     const auto header_hash = to_hash256(str_header_hash);
 
