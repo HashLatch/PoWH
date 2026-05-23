@@ -8,7 +8,11 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-ADMIN_PASSWORD = "Spike200$$$$$$$$"
+ADMIN_PASSWORD_HASH = "5256b4864fb49ff968fe6e7b4a8939dbf1070dfbe0910ac9f6c78bb44b5e40ee"
+
+def check_password(pw):
+    import hashlib
+    return hashlib.sha256(pw.encode()).hexdigest() == ADMIN_PASSWORD_HASH
 NODE_DIR = "/home/dstrychalski/PoWH"
 CLI = f"{NODE_DIR}/src/hashlatch-cli"
 CLI_ARGS = ["-rpcuser=hashlatch", "-rpcpassword=test123", "-rpcport=8766"]
@@ -142,7 +146,7 @@ def admin():
 @app.route('/api/admin/auth', methods=['POST'])
 def auth():
     data = request.get_json()
-    if data.get('password') == ADMIN_PASSWORD:
+    if check_password(data.get('password','')):
         return jsonify({"ok": True})
     return jsonify({"ok": False}), 401
 
@@ -194,7 +198,7 @@ def status():
 @app.route('/api/admin/service/<name>/<action>', methods=['POST'])
 def service_control(name, action):
     data = request.get_json() or {}
-    if data.get('password') != ADMIN_PASSWORD:
+    if not check_password(data.get('password','')):
         return jsonify({"error": "Unauthorized"}), 401
     
     actions = {
@@ -220,7 +224,7 @@ def service_control(name, action):
 @app.route('/api/admin/network-reset', methods=['POST'])
 def network_reset():
     data = request.get_json() or {}
-    if data.get('password') != ADMIN_PASSWORD:
+    if not check_password(data.get('password','')):
         return jsonify({"error": "Unauthorized"}), 401
     if not data.get('confirm'):
         return jsonify({"error": "Confirmation required"}), 400
@@ -290,7 +294,7 @@ def save_wallets():
 @app.route('/api/admin/rpc', methods=['POST'])
 def rpc_command():
     data = request.get_json() or {}
-    if data.get('password') != ADMIN_PASSWORD:
+    if not check_password(data.get('password','')):
         return jsonify({"error": "Unauthorized"}), 401
     cmd = data.get('command', '').strip()
     if not cmd:
