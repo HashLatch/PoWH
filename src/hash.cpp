@@ -9,6 +9,7 @@
 #include "crypto/hmac_sha512.h"
 #include "pubkey.h"
 #include "util.h"
+#include <sync.h>
 
 #include <crypto/ethash/include/ethash/progpow.hpp>
 
@@ -258,10 +259,12 @@ uint64_t SipHashUint256Extra(uint64_t k0, uint64_t k1, const uint256& val, uint3
 uint256 KAWPOWHash(const CBlockHeader& blockHeader, uint256& mix_hash)
 {
     static ethash::epoch_context_ptr context{nullptr, nullptr};
+    static CCriticalSection cs_kawpow;
 
     // Get the context from the block height
     const auto epoch_number = ethash::get_epoch_number(blockHeader.nHeight);
 
+    LOCK(cs_kawpow);
     if (!context || context->epoch_number != epoch_number)
         context = ethash::create_epoch_context(epoch_number);
 
