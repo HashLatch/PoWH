@@ -154,8 +154,9 @@ public:
         nDefaultPort = 18767;
         nPruneAfterHeight = 100000;
 
-        // Genesis block for PoWH (unique)
-        genesis = CreateGenesisBlock(1747234800, 0, 0x207fffff, 4, 5000 * COIN);
+        // Genesis block for PoWH mainnet - fair launch 2026
+        // Timestamp: Saturday May 24, 2026 00:00:00 UTC
+        genesis = CreateGenesisBlock(1748217600, 0, 0x207fffff, 4, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
 
 //         assert(consensus.hashGenesisBlock == uint256S("0000006b444bc2f2ffe627be9d9e7e7a0730000870ef6eb6da46c8eae389df90"));
@@ -291,7 +292,7 @@ public:
 
         uint32_t nGenesisTime = 1747234800;
 
-        genesis = CreateGenesisBlock(1524179366, 1, 0x207fffff, 4, 5000 * COIN);
+        genesis = CreateGenesisBlock(1524179366, 1, 0x207fffff, 4, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetX16RHash();
 
 //         assert(consensus.hashGenesisBlock == uint256S("0x0000006b444bc2f2ffe627be9d9e7e7a0730000870ef6eb6da46c8eae389df90"));
@@ -426,7 +427,7 @@ public:
         nDefaultPort = 18444;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1524179366, 1, 0x207fffff, 4, 5000 * COIN);
+        genesis = CreateGenesisBlock(1524179366, 1, 0x207fffff, 4, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetX16RHash();
 
         assert(consensus.hashGenesisBlock == uint256S("0x0804f7e615b06f507918982a0e13aa9bf8f383bcb4bbc51fc971b938e8a721f7"));
