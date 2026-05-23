@@ -5,86 +5,91 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HashLatch Admin</title>
 <style>
-  :root { --bg: #0a0a0f; --card: #111118; --border: #222235; --primary: #f0b429; --green: #22c55e; --red: #ef4444; --muted: #666; --text: #e5e5e5; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; font-size: 13px; min-height: 100vh; }
-  .login { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-  .login-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 40px; width: 360px; text-align: center; }
-  .login-box h1 { color: var(--primary); font-size: 20px; margin-bottom: 8px; }
-  .login-box p { color: var(--muted); font-size: 11px; margin-bottom: 24px; }
-  input[type=password], input[type=text] { width: 100%; background: #0a0a0f; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: monospace; font-size: 13px; padding: 10px 14px; outline: none; }
-  input:focus { border-color: var(--primary); }
-  .btn { cursor: pointer; border-radius: 6px; font-family: monospace; font-size: 12px; font-weight: 600; padding: 8px 16px; border: none; transition: 0.2s; }
-  .btn-primary { background: var(--primary); color: #000; }
-  .btn-primary:hover { background: #e0a820; }
-  .btn-danger { background: var(--red); color: #fff; }
-  .btn-danger:hover { background: #dc2626; }
-  .btn-ghost { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
-  .btn-ghost:hover { background: var(--primary); color: #000; }
-  .btn-sm { padding: 5px 10px; font-size: 11px; }
-  .btn-green { background: var(--green); color: #000; }
-  .btn-red { background: var(--red); color: #fff; }
-  .btn-gray { background: #333; color: #aaa; }
-  .dashboard { display: none; }
-  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
-  .header h1 { color: var(--primary); font-size: 16px; }
-  .header .logout { color: var(--muted); cursor: pointer; font-size: 11px; }
-  .header .logout:hover { color: var(--red); }
-  .main { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-  @media (max-width: 768px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
-  .card-title { color: var(--primary); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 12px; }
-  .metric { margin-bottom: 8px; }
-  .metric-label { color: var(--muted); font-size: 11px; }
-  .metric-value { color: var(--text); font-size: 14px; font-weight: 600; }
-  .metric-value.big { font-size: 24px; color: var(--primary); }
-  .progress-bar { background: #1a1a2e; border-radius: 4px; height: 6px; margin-top: 4px; overflow: hidden; }
-  .progress-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width 0.3s; }
-  .progress-fill.danger { background: var(--red); }
-  .progress-fill.warning { background: #f97316; }
-  .services-grid { display: grid; gap: 10px; }
-  .service-row { display: flex; align-items: center; justify-content: space-between; background: #0d0d1a; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
-  .service-name { font-weight: 600; font-size: 13px; }
-  .service-status { display: flex; align-items: center; gap: 6px; font-size: 11px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .dot.red { background: var(--red); }
-  .service-actions { display: flex; gap: 6px; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-  .tab { cursor: pointer; padding: 6px 14px; border-radius: 6px 6px 0 0; font-size: 11px; color: var(--muted); background: transparent; border: none; font-family: monospace; }
-  .tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-  .log-box { background: #050508; border: 1px solid var(--border); border-radius: 6px; color: #7fff7f; font-size: 11px; height: 300px; overflow-y: auto; padding: 12px; white-space: pre-wrap; word-break: break-all; }
-  .node-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .stat-box { background: #0d0d1a; border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
-  .stat-box .val { color: var(--primary); font-size: 20px; font-weight: 700; }
-  .stat-box .lbl { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
-  .alert { border-radius: 6px; font-size: 12px; margin-top: 8px; padding: 8px 12px; }
-  .alert-warn { background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.3); color: #fb923c; }
-  .alert-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--red); }
-  .alert-ok { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: var(--green); }
-  .rpc-input { display: flex; gap: 8px; margin-bottom: 8px; }
-  .rpc-input input { flex: 1; }
-  .rpc-result { background: #050508; border: 1px solid var(--border); border-radius: 6px; color: #aaffaa; font-size: 11px; min-height: 80px; padding: 10px; white-space: pre-wrap; }
-  .reset-section { border: 1px solid var(--red); border-radius: 10px; padding: 16px; }
-  .reset-section .card-title { color: var(--red); }
-  .section { margin-bottom: 24px; }
-  #toast { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: #000; border-radius: 8px; padding: 10px 18px; font-size: 12px; font-weight: 600; display: none; z-index: 999; }
+:root{--bg:#080810;--card:#0f0f1a;--border:#1e1e35;--primary:#f0b429;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--muted:#555570;--text:#e2e2f0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;font-size:13px;min-height:100vh}
+.login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at center,#0f0f2a 0%,var(--bg) 70%)}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:48px 40px;width:380px;text-align:center}
+.login-box h1{color:var(--primary);font-size:22px;letter-spacing:0.1em;margin-bottom:4px}
+.login-box p{color:var(--muted);font-size:11px;margin-bottom:28px;letter-spacing:0.05em}
+input{width:100%;background:#050510;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:monospace;font-size:13px;padding:11px 14px;outline:none;transition:border 0.2s}
+input:focus{border-color:var(--primary)}
+.btn{cursor:pointer;border-radius:8px;font-family:monospace;font-size:12px;font-weight:700;padding:9px 18px;border:none;transition:0.2s;letter-spacing:0.05em}
+.btn-primary{background:var(--primary);color:#000}.btn-primary:hover{background:#d9a020}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-ghost{background:transparent;color:var(--primary);border:1px solid var(--primary)}.btn-ghost:hover{background:var(--primary);color:#000}
+.btn-green{background:var(--green);color:#000}.btn-red{background:var(--red);color:#fff}.btn-gray{background:#252535;color:#888}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-sm{padding:5px 10px;font-size:11px}.btn-xs{padding:3px 8px;font-size:10px}
+.dashboard{display:none}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header h1{color:var(--primary);font-size:15px;letter-spacing:0.1em}
+.main{padding:20px 24px;max-width:1400px;margin:0 auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.card-title{color:var(--primary);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.stat-box{background:#0a0a18;border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.stat-box .val{color:var(--primary);font-size:22px;font-weight:700}
+.stat-box .lbl{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin-top:3px}
+.progress-bar{background:#12121f;border-radius:4px;height:6px;margin-top:6px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;background:var(--primary);transition:width 0.4s}
+.progress-fill.danger{background:var(--red)}.progress-fill.warning{background:#f97316}
+.service-row{display:flex;align-items:center;justify-content:space-between;background:#0a0a18;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px}
+.service-name{font-weight:700;font-size:13px}
+.service-desc{color:var(--muted);font-size:10px;margin-top:2px}
+.service-status{display:flex;align-items:center;gap:6px;font-size:11px;min-width:80px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot.green{background:var(--green);box-shadow:0 0 8px var(--green)}.dot.red{background:var(--red)}
+.service-btns{display:flex;gap:5px}
+.tabs{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0}
+.tab{cursor:pointer;padding:7px 16px;font-size:11px;color:var(--muted);background:transparent;border:none;font-family:monospace;border-bottom:2px solid transparent;margin-bottom:-1px;transition:0.2s}
+.tab:hover{color:var(--text)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.log-box{background:#04040c;border:1px solid var(--border);border-radius:8px;color:#7fff7f;font-size:11px;height:280px;overflow-y:auto;padding:12px;white-space:pre-wrap;word-break:break-all;line-height:1.5}
+.rpc-result{background:#04040c;border:1px solid var(--border);border-radius:8px;color:#aaffaa;font-size:11px;min-height:80px;max-height:200px;overflow-y:auto;padding:12px;white-space:pre-wrap}
+.wallet-row{display:flex;align-items:center;gap:8px;background:#0a0a18;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.wallet-addr{font-size:11px;color:var(--primary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wallet-bal{font-size:12px;font-weight:700;min-width:100px;text-align:right}
+.wallet-label{color:var(--muted);font-size:10px;margin-top:2px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;align-items:center;justify-content:center;padding:16px}
+.modal.open{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:480px}
+.modal-title{color:var(--primary);font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{cursor:pointer;color:var(--muted);font-size:18px}.modal-close:hover{color:var(--red)}
+.form-group{margin-bottom:12px}
+.form-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px;display:block}
+.seed-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.seed-word{background:#050510;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:11px;text-align:center}
+.seed-word span{color:var(--muted);font-size:9px;display:block}
+.alert{border-radius:6px;font-size:11px;padding:8px 12px;margin-top:8px}
+.alert-ok{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:var(--green)}
+.alert-err{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--red)}
+.alert-warn{background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);color:#fb923c}
+.reset-zone{border:1px solid rgba(239,68,68,0.4);border-radius:12px;padding:16px}
+.reset-zone .card-title{color:var(--red)}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--primary);color:#000;border-radius:10px;padding:10px 20px;font-size:12px;font-weight:700;display:none;z-index:999;box-shadow:0 4px 20px rgba(240,180,41,0.4)}
+.section-title{color:var(--muted);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;padding:8px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:8px;font-size:12px;border-bottom:1px solid rgba(30,30,53,0.5)}
+tr:hover td{background:rgba(255,255,255,0.02)}
+.copy-btn{cursor:pointer;color:var(--muted);font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:transparent;font-family:monospace}
+.copy-btn:hover{color:var(--primary);border-color:var(--primary)}
 </style>
 </head>
 <body>
-
 <div id="toast"></div>
 
 <!-- LOGIN -->
 <div class="login" id="loginPage">
   <div class="login-box">
-    <h1>⚡ HashLatch</h1>
-    <p>Admin Panel · Mainnet</p>
-    <input type="password" id="pwInput" placeholder="Admin password" style="margin-bottom:12px" onkeydown="if(event.key==='Enter')login()">
-    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="login()">Login</button>
-    <div id="loginErr" style="color:var(--red);font-size:11px;margin-top:8px"></div>
+    <h1>⚡ HASHLATCH</h1>
+    <p>ADMIN PANEL · MAINNET</p>
+    <input type="password" id="pwInput" placeholder="Admin password" style="margin-bottom:14px" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn btn-primary" style="width:100%" onclick="login()">LOGIN</button>
+    <div id="loginErr" style="color:var(--red);font-size:11px;margin-top:10px"></div>
   </div>
 </div>
 
@@ -92,296 +97,552 @@
 <div class="dashboard" id="dashboard">
   <div class="header">
     <h1>⚡ HashLatch Admin · Mainnet</h1>
-    <div style="display:flex;align-items:center;gap:16px">
+    <div style="display:flex;align-items:center;gap:20px">
       <span style="color:var(--muted);font-size:11px" id="lastUpdate">—</span>
-      <span class="logout" onclick="logout()">Logout ×</span>
+      <button class="btn btn-ghost btn-sm" onclick="fetchStatus()">↻ Refresh</button>
+      <span style="cursor:pointer;color:var(--muted);font-size:11px" onclick="logout()">Logout ×</span>
     </div>
   </div>
 
   <div class="main">
 
-    <!-- SYSTEM METRICS -->
-    <div class="card section">
-      <div class="card-title">System Resources</div>
-      <div class="grid3">
-        <div>
-          <div class="metric-label">CPU</div>
-          <div class="metric-value" id="cpu">—</div>
-          <div class="progress-bar"><div class="progress-fill" id="cpuBar" style="width:0%"></div></div>
-        </div>
-        <div>
-          <div class="metric-label">RAM</div>
-          <div class="metric-value" id="ram">—</div>
-          <div class="progress-bar"><div class="progress-fill" id="ramBar" style="width:0%"></div></div>
-          <div id="ramWarn"></div>
-        </div>
-        <div>
-          <div class="metric-label">Disk</div>
-          <div class="metric-value" id="disk">—</div>
-          <div class="progress-bar"><div class="progress-fill" id="diskBar" style="width:0%"></div></div>
-          <div id="diskWarn"></div>
-        </div>
-      </div>
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('overview',this)">Overview</button>
+      <button class="tab" onclick="showTab('wallets',this)">Wallets</button>
+      <button class="tab" onclick="showTab('mining',this)">Mining</button>
+      <button class="tab" onclick="showTab('services',this)">Services</button>
+      <button class="tab" onclick="showTab('logs',this)">Logs</button>
+      <button class="tab" onclick="showTab('rpc',this)">RPC Console</button>
+      <button class="tab" onclick="showTab('danger',this)">⚠ Danger</button>
     </div>
 
-    <!-- NODE STATS -->
-    <div class="card section">
-      <div class="card-title">Network Stats</div>
-      <div class="node-stats">
+    <!-- OVERVIEW TAB -->
+    <div id="tab-overview">
+      <div class="grid4" style="margin-bottom:16px">
         <div class="stat-box"><div class="val" id="statBlocks">—</div><div class="lbl">Blocks</div></div>
         <div class="stat-box"><div class="val" id="statConn">—</div><div class="lbl">Peers</div></div>
-        <div class="stat-box"><div class="val" id="statDiff">—</div><div class="lbl">Difficulty</div></div>
         <div class="stat-box"><div class="val" id="statBal">—</div><div class="lbl">Balance HLC</div></div>
         <div class="stat-box"><div class="val" id="statImmature">—</div><div class="lbl">Immature HLC</div></div>
-        <div class="stat-box"><div class="val" id="statChain">—</div><div class="lbl">Chain</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">System Resources</div>
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted);font-size:11px">CPU</span><span id="cpuVal">—</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="cpuBar" style="width:0%"></div></div>
+          </div>
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted);font-size:11px">RAM</span><span id="ramVal">—</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="ramBar" style="width:0%"></div></div>
+            <div id="ramAlert"></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted);font-size:11px">Disk</span><span id="diskVal">—</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="diskBar" style="width:0%"></div></div>
+            <div id="diskAlert"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Services Quick Status</div>
+          <div id="quickServices"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Network Info</div>
+        <div class="grid3">
+          <div><div style="color:var(--muted);font-size:10px">Chain</div><div id="infChain" style="font-size:14px;font-weight:700;color:var(--primary)">—</div></div>
+          <div><div style="color:var(--muted);font-size:10px">Difficulty</div><div id="infDiff" style="font-size:14px;font-weight:700">—</div></div>
+          <div><div style="color:var(--muted);font-size:10px">Stratum</div><div style="font-size:12px;color:var(--green)">34.185.173.154:3052</div></div>
+        </div>
       </div>
     </div>
 
-    <!-- SERVICES -->
-    <div class="card section">
-      <div class="card-title">Services</div>
-      <div class="services-grid" id="servicesGrid">
-        <!-- filled by JS -->
+    <!-- WALLETS TAB -->
+    <div id="tab-wallets" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="section-title" style="margin:0">Server Wallets</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalGenerate')">+ Generate New</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadWallets()">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="walletsList">Loading...</div>
+    </div>
+
+    <!-- MINING TAB -->
+    <div id="tab-mining" style="display:none">
+      <div class="card">
+        <div class="card-title">Mining Configuration</div>
+        <table>
+          <tr><th>Parameter</th><th>Value</th></tr>
+          <tr><td>Algorithm</td><td style="color:var(--primary)">KawPow</td></tr>
+          <tr><td>Stratum</td><td>stratum+tcp://34.185.173.154:3052</td></tr>
+          <tr><td>Pool Address (98%)</td><td id="miningAddr" style="color:var(--primary)">—</td></tr>
+          <tr><td>Dev Fee Address (2%)</td><td style="color:var(--muted)">cXgJpaAwQu7VZLkS6Berw3VTuLNLAMTH8d</td></tr>
+          <tr><td>Block Reward</td><td style="color:var(--green)">50 HLC</td></tr>
+          <tr><td>Block Time</td><td>~2 minutes</td></tr>
+          <tr><td>Halving</td><td>Every 1,050,000 blocks (~4 years)</td></tr>
+          <tr><td>Max Supply</td><td>21,000,000 HLC</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">Quick Mine Commands</div>
+        <div style="color:var(--muted);font-size:11px;margin-bottom:8px">Windows (.bat) — Run as Administrator:</div>
+        <div style="background:#04040c;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;color:#aaffaa;font-family:monospace">t-rex.exe -a kawpow -o stratum+tcp://34.185.173.154:3052 -u YOUR_ADDRESS.rig1 -p x</div>
+        <div style="color:var(--muted);font-size:11px;margin:10px 0 8px">Linux:</div>
+        <div style="background:#04040c;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;color:#aaffaa;font-family:monospace">./t-rex -a kawpow -o stratum+tcp://34.185.173.154:3052 -u YOUR_ADDRESS.rig1 -p x</div>
       </div>
     </div>
 
-    <!-- LOGS -->
-    <div class="card section">
-      <div class="card-title">Logs</div>
-      <div class="tabs" id="logTabs">
-        <button class="tab active" onclick="selectLog('node',this)">Node</button>
-        <button class="tab" onclick="selectLog('stratum',this)">Stratum</button>
-        <button class="tab" onclick="selectLog('api',this)">API</button>
-        <button class="tab" onclick="selectLog('explorer',this)">Explorer</button>
-        <button class="tab" onclick="selectLog('tunnel',this)">Tunnel</button>
+    <!-- SERVICES TAB -->
+    <div id="tab-services" style="display:none">
+      <div class="card">
+        <div class="card-title">Service Control</div>
+        <div id="servicesGrid"></div>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-        <button class="btn btn-ghost btn-sm" onclick="refreshLog()">↻ Refresh</button>
+      <div class="card">
+        <div class="card-title">Start All Services</div>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Start all services at once (node, stratum, API, explorer, tunnel)</p>
+        <button class="btn btn-green" onclick="startAll()">▶ Start All</button>
+        <button class="btn btn-red" style="margin-left:8px" onclick="stopAll()">■ Stop All</button>
       </div>
-      <div class="log-box" id="logBox">Loading...</div>
     </div>
 
-    <!-- RPC CONSOLE -->
-    <div class="card section">
-      <div class="card-title">RPC Console</div>
-      <div class="rpc-input">
-        <input type="text" id="rpcCmd" placeholder="getblockchaininfo" onkeydown="if(event.key==='Enter')runRpc()">
-        <button class="btn btn-ghost btn-sm" onclick="runRpc()">Run</button>
+    <!-- LOGS TAB -->
+    <div id="tab-logs" style="display:none">
+      <div class="card">
+        <div class="card-title">Service Logs</div>
+        <div class="tabs" id="logTabs" style="margin-bottom:10px">
+          <button class="tab active" onclick="selectLog('node',this)">Node</button>
+          <button class="tab" onclick="selectLog('stratum',this)">Stratum</button>
+          <button class="tab" onclick="selectLog('api',this)">API</button>
+          <button class="tab" onclick="selectLog('explorer',this)">Explorer</button>
+          <button class="tab" onclick="selectLog('tunnel',this)">Tunnel</button>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+          <button class="btn btn-ghost btn-sm" onclick="refreshLog()">↻ Refresh Log</button>
+        </div>
+        <div class="log-box" id="logBox">Select a service above...</div>
       </div>
-      <div class="rpc-result" id="rpcResult">Ready. Type a command and press Enter.</div>
     </div>
 
-    <!-- NETWORK RESET -->
-    <div class="card reset-section section">
-      <div class="card-title">⚠ Danger Zone — Network Reset</div>
-      <p style="color:var(--muted);font-size:12px;margin-bottom:12px">
-        Deletes all blocks, chainstate, and wallet data. Restarts from genesis block 0. Cannot be undone.
-      </p>
-      <button class="btn btn-danger" onclick="confirmReset()">🔴 Full Network Reset</button>
+    <!-- RPC CONSOLE TAB -->
+    <div id="tab-rpc" style="display:none">
+      <div class="card">
+        <div class="card-title">RPC Console</div>
+        <div style="color:var(--muted);font-size:11px;margin-bottom:8px">Allowed: getblockchaininfo, getblockcount, getwalletinfo, getnetworkinfo, getblock, gettransaction, getblockhash, getmininginfo, getnewaddress, listbounties, getbalance, listreceivedbyaddress</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input type="text" id="rpcCmd" placeholder="getblockchaininfo" onkeydown="if(event.key==='Enter')runRpc()" style="flex:1">
+          <button class="btn btn-ghost btn-sm" onclick="runRpc()">Run</button>
+        </div>
+        <div class="rpc-result" id="rpcResult">Ready. Type a command and press Enter.</div>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">
+          <button class="btn btn-gray btn-xs" onclick="quickRpc('getblockchaininfo')">chaininfo</button>
+          <button class="btn btn-gray btn-xs" onclick="quickRpc('getblockcount')">blockcount</button>
+          <button class="btn btn-gray btn-xs" onclick="quickRpc('getwalletinfo')">walletinfo</button>
+          <button class="btn btn-gray btn-xs" onclick="quickRpc('getnetworkinfo')">netinfo</button>
+          <button class="btn btn-gray btn-xs" onclick="quickRpc('getmininginfo')">mininginfo</button>
+          <button class="btn btn-gray btn-xs" onclick="quickRpc('getbalance')">balance</button>
+          <button class="btn btn-gray btn-xs" onclick="quickRpc('listbounties')">bounties</button>
+          <button class="btn btn-gray btn-xs" onclick="quickRpc('listreceivedbyaddress 0 true')">addresses</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DANGER TAB -->
+    <div id="tab-danger" style="display:none">
+      <div class="reset-zone card">
+        <div class="card-title">⚠ Full Network Reset</div>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Deletes ALL blocks, chainstate, wallet data. Resets to genesis block 0. CANNOT be undone. All mined coins will be lost.</p>
+        <div class="alert alert-warn" style="margin-bottom:14px">⚠ This will stop all services, wipe blockchain data, and restart the node from scratch.</div>
+        <button class="btn btn-danger" onclick="confirmReset()">🔴 Full Network Reset</button>
+      </div>
     </div>
 
   </div>
 </div>
 
+<!-- GENERATE WALLET MODAL -->
+<div class="modal" id="modalGenerate">
+  <div class="modal-box">
+    <div class="modal-title">Generate New Wallet <span class="modal-close" onclick="closeModal('modalGenerate')">×</span></div>
+    <div id="genResult" style="display:none">
+      <div class="form-group">
+        <div class="form-label">Address</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <code style="font-size:12px;color:var(--primary);flex:1;word-break:break-all" id="genAddr"></code>
+          <button class="copy-btn" onclick="copyText(document.getElementById('genAddr').textContent)">copy</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Seed Phrase (12 words) — SAVE THIS!</div>
+        <div class="seed-grid" id="genSeedGrid"></div>
+        <button class="copy-btn" style="margin-top:4px" onclick="copyText(document.getElementById('genSeedFull').value)">Copy all words</button>
+        <input type="hidden" id="genSeedFull">
+      </div>
+      <div class="alert alert-warn">⚠ Write down these 12 words and store safely. They are the ONLY way to recover this wallet.</div>
+    </div>
+    <div id="genLoading" style="color:var(--muted);text-align:center;padding:20px">Generating...</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-primary" style="flex:1" onclick="generateWallet()" id="genBtn">Generate</button>
+      <button class="btn btn-gray" style="flex:1" onclick="closeModal('modalGenerate')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEND HLC MODAL -->
+<div class="modal" id="modalSend">
+  <div class="modal-box">
+    <div class="modal-title">Send HLC <span class="modal-close" onclick="closeModal('modalSend')">×</span></div>
+    <div class="form-group">
+      <div class="form-label">From Address</div>
+      <input type="text" id="sendFrom" placeholder="cXxxx...">
+    </div>
+    <div class="form-group">
+      <div class="form-label">To Address</div>
+      <input type="text" id="sendTo" placeholder="cXxxx...">
+    </div>
+    <div class="form-group">
+      <div class="form-label">Amount (HLC)</div>
+      <input type="number" id="sendAmount" placeholder="10.00" step="0.01">
+    </div>
+    <div id="sendErr"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="sendHLC()">Send HLC</button>
+  </div>
+</div>
+
+<!-- SHOW SEED MODAL -->
+<div class="modal" id="modalSeed">
+  <div class="modal-box">
+    <div class="modal-title">Wallet Seed Phrase <span class="modal-close" onclick="closeModal('modalSeed')">×</span></div>
+    <div class="alert alert-warn" style="margin-bottom:12px">⚠ Never share your seed phrase with anyone!</div>
+    <div class="seed-grid" id="seedDisplay"></div>
+    <input type="hidden" id="seedFull">
+    <button class="copy-btn" style="margin-top:8px" onclick="copyText(document.getElementById('seedFull').value)">Copy all words</button>
+  </div>
+</div>
+
 <script>
-const API = 'https://admin.hashlatch.online';
-let password = '';
-let statusInterval = null;
-let logInterval = null;
-let currentLog = 'node';
+const API='https://admin.hashlatch.online';
+let password='';
+let statusInterval=null;
+let logInterval=null;
+let currentLog='node';
+let walletData=[];
 
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.display = 'block';
-  setTimeout(() => t.style.display = 'none', 3000);
+function toast(msg,isErr=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=isErr?'#ef4444':'var(--primary)';
+  t.style.color=isErr?'#fff':'#000';
+  t.style.display='block';
+  setTimeout(()=>t.style.display='none',3000);
 }
 
-async function login() {
-  const pw = document.getElementById('pwInput').value;
-  try {
-    const r = await fetch(`${API}/api/admin/auth`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({password: pw})
-    });
-    const d = await r.json();
-    if (d.ok) {
-      password = pw;
-      document.getElementById('loginPage').style.display = 'none';
-      document.getElementById('dashboard').style.display = 'block';
+function copyText(txt){navigator.clipboard.writeText(txt);toast('Copied!')}
+
+async function login(){
+  const pw=document.getElementById('pwInput').value;
+  try{
+    const r=await fetch(`${API}/api/admin/auth`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+    const d=await r.json();
+    if(d.ok){
+      password=pw;
+      document.getElementById('loginPage').style.display='none';
+      document.getElementById('dashboard').style.display='block';
       startPolling();
-    } else {
-      document.getElementById('loginErr').textContent = 'Invalid password';
+      loadWallets();
+    }else{
+      document.getElementById('loginErr').textContent='Invalid password';
     }
-  } catch(e) {
-    document.getElementById('loginErr').textContent = 'Cannot connect to admin API';
-  }
+  }catch(e){document.getElementById('loginErr').textContent='Cannot connect to admin API';}
 }
 
-function logout() {
-  clearInterval(statusInterval);
-  clearInterval(logInterval);
-  password = '';
-  document.getElementById('loginPage').style.display = 'flex';
-  document.getElementById('dashboard').style.display = 'none';
+function logout(){
+  clearInterval(statusInterval);clearInterval(logInterval);
+  password='';
+  document.getElementById('loginPage').style.display='flex';
+  document.getElementById('dashboard').style.display='none';
 }
 
-function startPolling() {
+function showTab(name,el){
+  document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).style.display='block';
+  el.classList.add('active');
+  if(name==='logs') fetchLog(currentLog);
+  if(name==='wallets') loadWallets();
+}
+
+function startPolling(){
   fetchStatus();
-  fetchLog(currentLog);
-  statusInterval = setInterval(fetchStatus, 10000);
-  logInterval = setInterval(() => fetchLog(currentLog), 15000);
+  statusInterval=setInterval(fetchStatus,10000);
 }
 
-async function fetchStatus() {
-  try {
-    const r = await fetch(`${API}/api/admin/status`);
-    const d = await r.json();
+async function fetchStatus(){
+  try{
+    const r=await fetch(`${API}/api/admin/status`);
+    const d=await r.json();
     updateUI(d);
-    document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
-  } catch(e) {
-    document.getElementById('lastUpdate').textContent = 'Connection error';
-  }
+    document.getElementById('lastUpdate').textContent='Updated: '+new Date().toLocaleTimeString();
+  }catch(e){document.getElementById('lastUpdate').textContent='Connection error';}
 }
 
-function updateUI(d) {
+function updateUI(d){
+  // Stats
+  const n=d.node||{};
+  document.getElementById('statBlocks').textContent=n.blocks??'—';
+  document.getElementById('statConn').textContent=n.connections??'—';
+  document.getElementById('statBal').textContent=n.balance!=null?Number(n.balance).toFixed(2):'—';
+  document.getElementById('statImmature').textContent=n.immature_balance!=null?Number(n.immature_balance).toFixed(2):'—';
+  document.getElementById('infChain').textContent=n.chain??'—';
+  document.getElementById('infDiff').textContent=n.difficulty?Number(n.difficulty).toExponential(2):'—';
+
   // System
-  const cpu = d.system.cpu_percent;
-  const ram = d.system.ram_percent;
-  const disk = d.system.disk_percent;
-
-  document.getElementById('cpu').textContent = cpu + '%';
-  document.getElementById('ram').textContent = `${d.system.ram_used_gb}GB / ${d.system.ram_total_gb}GB (${ram}%)`;
-  document.getElementById('disk').textContent = `${d.system.disk_used_gb}GB / ${d.system.disk_total_gb}GB (${disk}%)`;
-
-  setBar('cpuBar', cpu);
-  setBar('ramBar', ram);
-  setBar('diskBar', disk);
-
-  document.getElementById('ramWarn').innerHTML = ram > 80 ? '<div class="alert alert-danger">⚠ RAM critical!</div>' : ram > 60 ? '<div class="alert alert-warn">RAM usage high</div>' : '';
-  document.getElementById('diskWarn').innerHTML = disk > 80 ? '<div class="alert alert-danger">⚠ Disk critical!</div>' : disk > 60 ? '<div class="alert alert-warn">Disk usage high</div>' : '';
-
-  // Node stats
-  const n = d.node;
-  document.getElementById('statBlocks').textContent = n.blocks ?? '—';
-  document.getElementById('statConn').textContent = n.connections ?? '—';
-  document.getElementById('statDiff').textContent = n.difficulty ? Number(n.difficulty).toExponential(2) : '—';
-  document.getElementById('statBal').textContent = n.balance ?? '—';
-  document.getElementById('statImmature').textContent = n.immature_balance ?? '—';
-  document.getElementById('statChain').textContent = n.chain ?? '—';
+  const s=d.system||{};
+  setMetric('cpu',s.cpu_percent,`${s.cpu_percent}%`);
+  setMetric('ram',s.ram_percent,`${s.ram_used_gb}GB / ${s.ram_total_gb}GB (${s.ram_percent}%)`);
+  setMetric('disk',s.disk_percent,`${s.disk_used_gb}GB / ${s.disk_total_gb}GB (${s.disk_percent}%)`);
+  document.getElementById('ramAlert').innerHTML=s.ram_percent>80?'<div class="alert alert-err">⚠ RAM critical! Consider scaling up.</div>':s.ram_percent>65?'<div class="alert alert-warn">RAM usage high</div>':'';
+  document.getElementById('diskAlert').innerHTML=s.disk_percent>80?'<div class="alert alert-err">⚠ Disk critical!</div>':s.disk_percent>65?'<div class="alert alert-warn">Disk usage high</div>':'';
 
   // Services
-  const services = [
-    {key:'node', name:'HashLatch Node', desc:'Core blockchain daemon'},
-    {key:'stratum', name:'Stratum Pool', desc:'Mining pool server :3052'},
-    {key:'api', name:'REST API', desc:'Public API :5000'},
-    {key:'explorer', name:'Block Explorer', desc:'Iquidus explorer :3001'},
-    {key:'tunnel', name:'Cloudflare Tunnel', desc:'HTTPS proxy'},
+  const svcs=d.services||{};
+  const svcList=[
+    {key:'node',name:'HashLatch Node',desc:'Core daemon :8766'},
+    {key:'stratum',name:'Stratum Pool',desc:'Mining pool :3052'},
+    {key:'api',name:'REST API',desc:'Public API :5000'},
+    {key:'explorer',name:'Block Explorer',desc:'Iquidus :3001'},
+    {key:'tunnel',name:'Cloudflare Tunnel',desc:'HTTPS proxy'},
   ];
-  const grid = document.getElementById('servicesGrid');
-  grid.innerHTML = services.map(s => {
-    const running = d.services[s.key];
-    return `
-      <div class="service-row">
-        <div>
-          <div class="service-name">${s.name}</div>
-          <div style="color:var(--muted);font-size:10px">${s.desc}</div>
-        </div>
-        <div class="service-status">
-          <div class="dot ${running ? 'green' : 'red'}"></div>
-          <span>${running ? 'Running' : 'Stopped'}</span>
-        </div>
-        <div class="service-actions">
-          <button class="btn btn-sm btn-green" onclick="serviceAction('${s.key}','start')">Start</button>
-          <button class="btn btn-sm btn-red" onclick="serviceAction('${s.key}','stop')">Stop</button>
-          <button class="btn btn-sm btn-gray" onclick="serviceAction('${s.key}','restart')">Restart</button>
-        </div>
-      </div>`;
-  }).join('');
+
+  // Quick status
+  document.getElementById('quickServices').innerHTML=svcList.map(s=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+      <div class="dot ${svcs[s.key]?'green':'red'}"></div>
+      <div style="flex:1"><div style="font-size:12px">${s.name}</div><div style="color:var(--muted);font-size:10px">${s.desc}</div></div>
+      <div style="font-size:11px;color:${svcs[s.key]?'var(--green)':'var(--red)'}">${svcs[s.key]?'Running':'Stopped'}</div>
+    </div>`).join('');
+
+  // Full services grid
+  document.getElementById('servicesGrid').innerHTML=svcList.map(s=>`
+    <div class="service-row">
+      <div style="flex:1">
+        <div class="service-name">${s.name}</div>
+        <div class="service-desc">${s.desc}</div>
+      </div>
+      <div class="service-status">
+        <div class="dot ${svcs[s.key]?'green':'red'}"></div>
+        <span style="color:${svcs[s.key]?'var(--green)':'var(--red)'}">${svcs[s.key]?'Running':'Stopped'}</span>
+      </div>
+      <div class="service-btns">
+        <button class="btn btn-sm btn-green" onclick="svcAction('${s.key}','start')">Start</button>
+        <button class="btn btn-sm btn-red" onclick="svcAction('${s.key}','stop')">Stop</button>
+        <button class="btn btn-sm btn-gray" onclick="svcAction('${s.key}','restart')">Restart</button>
+      </div>
+    </div>`).join('');
 }
 
-function setBar(id, pct) {
-  const el = document.getElementById(id);
-  el.style.width = pct + '%';
-  el.className = 'progress-fill' + (pct > 80 ? ' danger' : pct > 60 ? ' warning' : '');
+function setMetric(id,pct,label){
+  document.getElementById(id+'Val').textContent=label;
+  const bar=document.getElementById(id+'Bar');
+  bar.style.width=pct+'%';
+  bar.className='progress-fill'+(pct>80?' danger':pct>65?' warning':'');
 }
 
-async function serviceAction(service, action) {
-  toast(`${action} ${service}...`);
-  try {
-    const r = await fetch(`${API}/api/admin/service/${service}/${action}`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({password})
-    });
-    const d = await r.json();
-    toast(d.message || d.error || 'Done');
-    setTimeout(fetchStatus, 3000);
-  } catch(e) {
-    toast('Error: ' + e.message);
+async function svcAction(name,action){
+  toast(`${action} ${name}...`);
+  try{
+    const r=await fetch(`${API}/api/admin/service/${name}/${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+    const d=await r.json();
+    toast(d.message||d.error||'Done',!!d.error);
+    setTimeout(fetchStatus,3000);
+  }catch(e){toast('Error: '+e.message,true);}
+}
+
+async function startAll(){
+  toast('Starting all services...');
+  for(const s of ['node','stratum','api','explorer','tunnel']){
+    await fetch(`${API}/api/admin/service/${s}/start`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+    await new Promise(r=>setTimeout(r,1500));
   }
+  toast('All services started!');
+  setTimeout(fetchStatus,3000);
 }
 
-function selectLog(service, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+async function stopAll(){
+  if(!confirm('Stop all services?')) return;
+  toast('Stopping all...');
+  for(const s of ['tunnel','explorer','api','stratum','node']){
+    await fetch(`${API}/api/admin/service/${s}/stop`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});
+  }
+  toast('All stopped.');
+  setTimeout(fetchStatus,2000);
+}
+
+// WALLETS
+async function loadWallets(){
+  try{
+    const r=await fetch(`${API}/api/admin/wallets`);
+    walletData=await r.json();
+    renderWallets();
+    // Update mining addr
+    const miningWallet=walletData.find(w=>w.label&&w.label.includes('mining'))||walletData[0];
+    if(miningWallet) document.getElementById('miningAddr').textContent=miningWallet.address;
+  }catch(e){document.getElementById('walletsList').innerHTML='<div class="alert alert-err">Cannot load wallets</div>';}
+}
+
+async function getBalances(){
+  for(const w of walletData){
+    try{
+      const r=await fetch(`${API.replace('admin.','api.')}/api/balance/${w.address}`);
+      const d=await r.json();
+      w._bal=d.balance??d.result??0;
+    }catch{w._bal=null;}
+  }
+  renderWallets();
+}
+
+function renderWallets(){
+  if(!walletData.length){document.getElementById('walletsList').innerHTML='<div style="color:var(--muted);text-align:center;padding:20px">No wallets yet. Generate one below.</div>';return;}
+  document.getElementById('walletsList').innerHTML=`
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn btn-blue btn-sm" onclick="getBalances()">💰 Load Balances</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Address</th><th>Balance</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${walletData.map((w,i)=>`
+          <tr>
+            <td style="color:var(--muted)">${i+1}</td>
+            <td>
+              <code style="color:var(--primary);font-size:11px">${w.address}</code>
+              <button class="copy-btn" onclick="copyText('${w.address}')">copy</button>
+              ${w.label?`<div style="color:var(--muted);font-size:10px">${w.label}</div>`:''}
+            </td>
+            <td style="color:var(--green);font-weight:700">${w._bal!=null?Number(w._bal).toFixed(4)+' HLC':'—'}</td>
+            <td style="color:var(--muted);font-size:11px">${w.created?w.created.slice(0,16):'—'}</td>
+            <td>
+              <div style="display:flex;gap:4px">
+                <button class="btn btn-gray btn-xs" onclick="showSeed(${i})">🔑 Seed</button>
+                <button class="btn btn-blue btn-xs" onclick="openSend('${w.address}')">→ Send</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function showSeed(i){
+  const w=walletData[i];
+  if(!w||!w.seed){toast('No seed saved for this wallet',true);return;}
+  const words=w.seed.trim().split(/\s+/);
+  document.getElementById('seedDisplay').innerHTML=words.map((wd,j)=>`<div class="seed-word"><span>${j+1}</span>${wd}</div>`).join('');
+  document.getElementById('seedFull').value=w.seed;
+  openModal('modalSeed');
+}
+
+function openSend(addr){
+  document.getElementById('sendFrom').value=addr;
+  document.getElementById('sendTo').value='';
+  document.getElementById('sendAmount').value='';
+  document.getElementById('sendErr').innerHTML='';
+  openModal('modalSend');
+}
+
+async function sendHLC(){
+  const from=document.getElementById('sendFrom').value.trim();
+  const to=document.getElementById('sendTo').value.trim();
+  const amount=parseFloat(document.getElementById('sendAmount').value);
+  if(!to||!amount||amount<=0){document.getElementById('sendErr').innerHTML='<div class="alert alert-err">Fill all fields</div>';return;}
+  try{
+    const r=await fetch(`${API.replace('admin.','api.')}/api/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from,to,amount})});
+    const d=await r.json();
+    if(d.error){document.getElementById('sendErr').innerHTML=`<div class="alert alert-err">${d.error}</div>`;return;}
+    toast('Transaction sent!');
+    closeModal('modalSend');
+    loadWallets();
+  }catch(e){document.getElementById('sendErr').innerHTML=`<div class="alert alert-err">${e.message}</div>`;}
+}
+
+async function generateWallet(){
+  document.getElementById('genResult').style.display='none';
+  document.getElementById('genLoading').style.display='block';
+  document.getElementById('genBtn').disabled=true;
+  try{
+    const r=await fetch(`${API.replace('admin.','api.')}/api/getseedphrase`);
+    const d=await r.json();
+    if(d.error){toast(d.error,true);return;}
+    document.getElementById('genAddr').textContent=d.address;
+    const words=(d.seed_phrase||'').trim().split(/\s+/);
+    document.getElementById('genSeedGrid').innerHTML=words.map((w,i)=>`<div class="seed-word"><span>${i+1}</span>${w}</div>`).join('');
+    document.getElementById('genSeedFull').value=d.seed_phrase;
+    document.getElementById('genResult').style.display='block';
+    document.getElementById('genLoading').style.display='none';
+    loadWallets();
+  }catch(e){
+    toast('Error: '+e.message,true);
+    document.getElementById('genLoading').style.display='none';
+  }
+  document.getElementById('genBtn').disabled=false;
+}
+
+// LOGS
+function selectLog(service,el){
+  document.querySelectorAll('#logTabs .tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  currentLog = service;
+  currentLog=service;
   fetchLog(service);
 }
-
-async function fetchLog(service) {
-  try {
-    const r = await fetch(`${API}/api/admin/logs/${service}`);
-    const d = await r.json();
-    const box = document.getElementById('logBox');
-    box.textContent = d.log || 'No logs';
-    box.scrollTop = box.scrollHeight;
-  } catch(e) {
-    document.getElementById('logBox').textContent = 'Error loading logs';
-  }
+async function fetchLog(service){
+  try{
+    const r=await fetch(`${API}/api/admin/logs/${service}`);
+    const d=await r.json();
+    const box=document.getElementById('logBox');
+    box.textContent=d.log||'No logs';
+    box.scrollTop=box.scrollHeight;
+  }catch(e){document.getElementById('logBox').textContent='Error loading logs';}
 }
+function refreshLog(){fetchLog(currentLog);}
 
-function refreshLog() { fetchLog(currentLog); }
-
-async function runRpc() {
-  const cmd = document.getElementById('rpcCmd').value.trim();
-  if (!cmd) return;
-  document.getElementById('rpcResult').textContent = 'Running...';
-  try {
-    const r = await fetch(`${API}/api/admin/rpc`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({password, command: cmd})
-    });
-    const d = await r.json();
-    document.getElementById('rpcResult').textContent = d.result || d.error || JSON.stringify(d, null, 2);
-  } catch(e) {
-    document.getElementById('rpcResult').textContent = 'Error: ' + e.message;
-  }
+// RPC
+async function runRpc(){
+  const cmd=document.getElementById('rpcCmd').value.trim();
+  if(!cmd)return;
+  document.getElementById('rpcResult').textContent='Running...';
+  try{
+    const r=await fetch(`${API}/api/admin/rpc`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password,command:cmd})});
+    const d=await r.json();
+    try{document.getElementById('rpcResult').textContent=JSON.stringify(JSON.parse(d.result),null,2);}
+    catch{document.getElementById('rpcResult').textContent=d.result||d.error||JSON.stringify(d);}
+  }catch(e){document.getElementById('rpcResult').textContent='Error: '+e.message;}
 }
+function quickRpc(cmd){document.getElementById('rpcCmd').value=cmd;runRpc();}
 
-function confirmReset() {
-  if (!confirm('⚠ WARNING: This will DELETE ALL BLOCKS and reset the network to genesis block 0.\n\nAll mined coins will be lost.\n\nAre you absolutely sure?')) return;
-  if (!confirm('FINAL CONFIRMATION: Type OK to proceed with full network reset.')) return;
+// RESET
+function confirmReset(){
+  if(!confirm('⚠ WARNING: This will DELETE ALL BLOCKS and reset network to genesis block 0.\n\nAll mined coins will be LOST.\n\nAre you sure?'))return;
+  if(!confirm('FINAL CONFIRMATION: This cannot be undone. Proceed?'))return;
   doReset();
 }
-
-async function doReset() {
+async function doReset(){
   toast('Resetting network...');
-  try {
-    const r = await fetch(`${API}/api/admin/network-reset`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({password, confirm: true})
-    });
-    const d = await r.json();
-    toast(d.message || 'Reset complete');
-    setTimeout(fetchStatus, 5000);
-  } catch(e) {
-    toast('Error: ' + e.message);
-  }
+  try{
+    const r=await fetch(`${API}/api/admin/network-reset`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password,confirm:true})});
+    const d=await r.json();
+    toast(d.message||'Reset complete');
+    setTimeout(fetchStatus,5000);
+  }catch(e){toast('Error: '+e.message,true);}
 }
+
+// MODALS
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'));});
 </script>
 </body>
 </html>
