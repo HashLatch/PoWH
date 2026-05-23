@@ -99,7 +99,7 @@ class CMainParams : public CChainParams {
 public:
     CMainParams() {
         strNetworkID = "powh-main";
-        consensus.nSubsidyHalvingInterval = 2100000;  //~ 4 yrs at 1 min block time
+        consensus.nSubsidyHalvingInterval = 1050000;  //~ 4 yrs at 2 min block time
         consensus.nBIP34Enabled = true;
         consensus.nBIP65Enabled = true;
         consensus.nBIP66Enabled = true;
@@ -108,7 +108,7 @@ public:
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.kawpowLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 2016 * 60;
-        consensus.nPowTargetSpacing = 1 * 60;
+        consensus.nPowTargetSpacing = 2 * 60;
 		consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1613;
@@ -214,7 +214,7 @@ public:
         strAddNullQualifierTagBurnAddress = "RXaddTagBurnXXXXXXXXXXXXXXXXZQm5ya";
         strGlobalBurnAddress = "RXBurnXXXXXXXXXXXXXXXXXXXXXXWUo9FV";
 
-        nDGWActivationBlock = 338778;
+        nDGWActivationBlock = 1;  // DGW active from the start (fair launch protection)
         nMaxReorganizationDepth = 60;
         nMinReorganizationPeers = 4;
         nMinReorganizationAge = 60 * 60 * 12;
@@ -233,7 +233,7 @@ class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
         strNetworkID = "test";
-        consensus.nSubsidyHalvingInterval = 2100000;
+        consensus.nSubsidyHalvingInterval = 1050000;
         consensus.nBIP34Enabled = true;
         consensus.nBIP65Enabled = true;
         consensus.nBIP66Enabled = true;
@@ -243,7 +243,7 @@ public:
         consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.kawpowLimit = uint256S("000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 2016 * 60;
-        consensus.nPowTargetSpacing = 1 * 60;
+        consensus.nPowTargetSpacing = 2 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1310;
@@ -380,7 +380,7 @@ public:
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.kawpowLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 2016 * 60;
-        consensus.nPowTargetSpacing = 1 * 60;
+        consensus.nPowTargetSpacing = 2 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 108;
