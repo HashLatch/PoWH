@@ -180,7 +180,7 @@ async function loadStats() {
     document.getElementById('sBlocks').textContent = fmt(d.blocks);
     document.getElementById('sDiff').textContent = Number(d.difficulty).toExponential(2);
     const hr = d.hashrate;
-    document.getElementById('sHashrate').textContent = hr > 1e6 ? (hr/1e6).toFixed(2)+' MH/s' : hr > 1e3 ? (hr/1e3).toFixed(2)+' KH/s' : hr.toFixed(0)+' H/s';
+    const hrStr = hr >= 1e12 ? (hr/1e12).toFixed(2)+' TH/s' : hr >= 1e9 ? (hr/1e9).toFixed(2)+' GH/s' : hr >= 1e6 ? (hr/1e6).toFixed(2)+' MH/s' : hr >= 1e3 ? (hr/1e3).toFixed(2)+' KH/s' : hr.toFixed(2)+' H/s'; document.getElementById('sHashrate').textContent = hrStr;
     document.getElementById('sSupply').textContent = fmt(Math.round(d.supply));
   } catch(e) {
     console.error('Stats error:', e);
