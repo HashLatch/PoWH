@@ -1,11 +1,11 @@
 #include <sstream>
-#include <bounty/bounty.h>
-#include <script/script.h>
-#include <utilstrencodings.h>
-#include <chain.h>
-#include <validation.h>
-#include <txmempool.h>
-#include <chainparams.h>
+#include "bounty/bounty.h"
+#include "script/script.h"
+#include "utilstrencodings.h"
+#include "chain.h"
+#include "validation.h"
+#include "txmempool.h"
+#include "chainparams.h"
 
 std::map<uint256, BountyEntry> g_bounty_index;
 std::map<std::string, CommitEntry> g_commit_index;
@@ -114,7 +114,7 @@ void RebuildBountyIndex(int fromHeight)
 
     while (pindex) {
         CBlock block;
-        if (!ReadBlockFromDisk(block, pindex, Params().GetConsensus())) {
+        if (!ReadBlockFromDisk(block, pindex, GetParams().GetConsensus())) {
             pindex = chainActive.Next(pindex);
             continue;
         }
