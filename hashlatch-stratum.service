@@ -1,0 +1,14 @@
+[Unit]
+Description=HashLatch Services (stratum, api, admin, explorer, tunnel)
+After=network.target hashlatch.service
+Requires=hashlatch.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=dstrychalski
+ExecStart=/home/dstrychalski/PoWH/hashlatch-services.sh
+ExecStop=/bin/bash -c 'pkill -f "node server.js"; pkill -f hlc_explorer; pkill -f hashlatch_api; pkill -f admin_panel; pkill -f cloudflared'
+
+[Install]
+WantedBy=multi-user.target
