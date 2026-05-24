@@ -525,7 +525,7 @@ function renderWallets(){
               <button class="copy-btn" onclick="copyText('${w.address}')">copy</button>
               ${w.label?`<div style="color:var(--muted);font-size:10px">${w.label}</div>`:''}
             </td>
-            <td style="color:var(--green);font-weight:700">${w._bal!=null?Number(w._bal).toFixed(4)+' HLC':'—'}${w._immature?`<br><span style="color:var(--muted);font-size:10px">${Number(w._immature).toFixed(2)} immature</span>`:''}</td>
+            <td style="color:var(--green);font-weight:700">${w._bal!=null||w._immature!=null?`${Number((w._bal||0)+(w._immature||0)).toFixed(4)} HLC${w._immature?`<br><span style="color:var(--muted);font-size:10px">${Number(w._bal||0).toFixed(2)} confirmed + ${Number(w._immature||0).toFixed(2)} immature</span>`:''}` :'—'}</td>
             <td style="color:var(--muted);font-size:11px">${w.created?w.created.slice(0,16):'—'}</td>
             <td>
               <div style="display:flex;gap:4px">
