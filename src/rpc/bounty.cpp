@@ -102,6 +102,10 @@ static UniValue createbounty(const JSONRPCRequest& request)
         << OP_RETURN
         << std::vector<unsigned char>(metadata.begin(), metadata.end());
 
+    // Store redeemScript in wallet BEFORE creating transaction
+    // This is required so the node accepts P2SH output as standard
+    pwallet->AddCScript(redeemScript);
+
     // Build tx: P2SH escrow + OP_RETURN
     std::vector<CRecipient> recipients;
     recipients.push_back({p2shScript, amount, false});
@@ -132,9 +136,6 @@ static UniValue createbounty(const JSONRPCRequest& request)
     entry.reclaimed = false;
     entry.voutIndex = 0;
     g_bounty_index[wtx.GetHash()] = entry;
-
-    // Store redeemScript in wallet so we can spend it later
-    pwallet->AddCScript(redeemScript);
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("txid", wtx.GetHash().GetHex());
