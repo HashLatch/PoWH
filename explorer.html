@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HashLatch Explorer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
+:root{--bg:#080810;--card:#0f0f1a;--border:#1e1e35;--primary:#f0b429;--green:#22c55e;--red:#ef4444;--muted:#555570;--text:#e2e2f0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono','Courier New',monospace;font-size:13px;min-height:100vh}
+a{color:var(--primary);text-decoration:none}a:hover{text-decoration:underline}
+.nav{background:rgba(8,8,16,0.97);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+.nav-brand{color:var(--primary);font-weight:700;font-size:15px;letter-spacing:0.1em;display:flex;align-items:center;gap:8px}
+.nav-links{display:flex;gap:20px}
+.nav-links a{color:var(--muted);font-size:12px;letter-spacing:0.05em;transition:color 0.2s}
+.nav-links a:hover,.nav-links a.active{color:var(--primary);text-decoration:none}
+.main{max-width:1200px;margin:0 auto;padding:24px}
+.search-bar{display:flex;gap:8px;margin-bottom:24px}
+.search-bar input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:12px 16px;outline:none;transition:border 0.2s}
+.search-bar input:focus{border-color:var(--primary)}
+.search-bar button{background:var(--primary);border:none;border-radius:8px;color:#000;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;padding:12px 24px;transition:0.2s}
+.search-bar button:hover{background:#d9a020}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+@media(max-width:768px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.stat-val{color:var(--primary);font-size:20px;font-weight:700;margin-bottom:4px}
+.stat-lbl{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.1em}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
+.card-title{color:var(--primary);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:12px}
+table{width:100%;border-collapse:collapse}
+th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;padding:8px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:9px 8px;font-size:12px;border-bottom:1px solid rgba(30,30,53,0.5);vertical-align:middle}
+tr:hover td{background:rgba(240,180,41,0.03)}
+.hash{font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+.badge{border-radius:4px;font-size:10px;padding:2px 6px;font-weight:700}
+.badge-green{background:rgba(34,197,94,0.15);color:var(--green)}
+.badge-gold{background:rgba(240,180,41,0.15);color:var(--primary)}
+.progress-bar{background:#12121f;border-radius:3px;height:4px;overflow:hidden;min-width:60px}
+.progress-fill{height:100%;background:var(--primary);border-radius:3px}
+.detail-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 16px}
+.detail-key{color:var(--muted);font-size:11px;white-space:nowrap;padding:4px 0}
+.detail-val{font-size:12px;word-break:break-all;padding:4px 0}
+.page{display:none}.page.active{display:block}
+.tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0}
+.tab{cursor:pointer;padding:7px 14px;font-size:11px;color:var(--muted);background:transparent;border:none;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--text)}.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.back-btn{color:var(--muted);cursor:pointer;font-size:11px;margin-bottom:14px;display:inline-flex;align-items:center;gap:4px}
+.back-btn:hover{color:var(--primary)}
+.loading{color:var(--muted);text-align:center;padding:40px;font-size:12px}
+.err{color:var(--red);text-align:center;padding:20px;font-size:12px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:8px}
+.pager{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:12px}
+.pager button{background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;font-family:inherit;font-size:11px;padding:5px 12px}
+.pager button:hover{border-color:var(--primary);color:var(--primary)}
+.pager button:disabled{opacity:0.4;cursor:default}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">⚡ HashLatch Explorer</div>
+  <div class="nav-links">
+    <a href="#" onclick="showPage('home')" id="link-home" class="active">Explorer</a>
+    <a href="#" onclick="showPage('richlist')" id="link-richlist">Top 100</a>
+    <a href="https://hashlatch.online" target="_blank">← Main Site</a>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="page-home">
+    <div class="search-bar">
+      <input id="searchInput" type="text" placeholder="Search block height, block hash, tx hash or address..." onkeydown="if(event.key==='Enter')doSearch()">
+      <button onclick="doSearch()">Search</button>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat"><div class="stat-val" id="sBlocks">—</div><div class="stat-lbl">Blocks</div></div>
+      <div class="stat"><div class="stat-val" id="sDiff">—</div><div class="stat-lbl">Difficulty</div></div>
+      <div class="stat"><div class="stat-val" id="sHashrate">—</div><div class="stat-lbl">Hashrate</div></div>
+      <div class="stat"><div class="stat-val" id="sSupply">—</div><div class="stat-lbl">Supply (HLC)</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Latest Blocks</div>
+      <div id="blocksTable"><div class="loading">Loading blocks...</div></div>
+      <div class="pager">
+        <button onclick="prevPage()" id="btnPrev" disabled>← Prev</button>
+        <span style="color:var(--muted);font-size:11px" id="pageInfo">Page 1</span>
+        <button onclick="nextPage()" id="btnNext">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCK DETAIL -->
+  <div class="page" id="page-block">
+    <div class="back-btn" onclick="showPage('home')">← Back to Explorer</div>
+    <div class="card">
+      <div class="card-title">Block Detail</div>
+      <div id="blockDetail"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card" id="blockTxCard" style="display:none">
+      <div class="card-title">Transactions</div>
+      <div id="blockTxs"></div>
+    </div>
+  </div>
+
+  <!-- TX DETAIL -->
+  <div class="page" id="page-tx">
+    <div class="back-btn" onclick="history.back()">← Back</div>
+    <div class="card">
+      <div class="card-title">Transaction Detail</div>
+      <div id="txDetail"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- ADDRESS DETAIL -->
+  <div class="page" id="page-address">
+    <div class="back-btn" onclick="showPage('home')">← Back to Explorer</div>
+    <div class="card">
+      <div class="card-title">Address</div>
+      <div id="addressDetail"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Transactions</div>
+      <div id="addressTxs"></div>
+    </div>
+  </div>
+
+  <!-- RICHLIST -->
+  <div class="page" id="page-richlist">
+    <div class="card">
+      <div class="card-title">Top 100 Wallets</div>
+      <div id="richlistTable"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = '';  // same origin
+let currentPage = 0;
+const PAGE_SIZE = 20;
+let totalBlocks = 0;
+
+function fmt(n) { return Number(n).toLocaleString('en'); }
+function fmtHLC(n) { return Number(n).toFixed(4) + ' HLC'; }
+function fmtTime(ts) {
+  const d = new Date(ts * 1000);
+  return d.toUTCString().replace(' GMT','');
+}
+function shortHash(h, len=16) { return h ? h.slice(0,len)+'...' : '—'; }
+
+async function get(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const link = document.getElementById('link-'+name);
+  if (link) link.classList.add('active');
+  if (name === 'richlist') loadRichlist();
+  if (name === 'home') loadBlocks();
+  window.scrollTo(0,0);
+}
+
+async function loadStats() {
+  try {
+    const d = await get('/api/info');
+    totalBlocks = d.blocks;
+    document.getElementById('sBlocks').textContent = fmt(d.blocks);
+    document.getElementById('sDiff').textContent = Number(d.difficulty).toExponential(2);
+    const hr = d.hashrate;
+    document.getElementById('sHashrate').textContent = hr > 1e6 ? (hr/1e6).toFixed(2)+' MH/s' : hr > 1e3 ? (hr/1e3).toFixed(2)+' KH/s' : hr.toFixed(0)+' H/s';
+    document.getElementById('sSupply').textContent = fmt(Math.round(d.supply));
+  } catch(e) {
+    console.error('Stats error:', e);
+  }
+}
+
+async function loadBlocks() {
+  const el = document.getElementById('blocksTable');
+  el.innerHTML = '<div class="loading">Loading blocks...</div>';
+  try {
+    const blocks = await get(`/api/blocks?count=${PAGE_SIZE}&offset=${currentPage * PAGE_SIZE}`);
+    if (!blocks.length) { el.innerHTML = '<div class="loading">No blocks yet</div>'; return; }
+    el.innerHTML = `<table>
+      <thead><tr><th>Height</th><th>Hash</th><th>Txs</th><th>Size</th><th>Time</th></tr></thead>
+      <tbody>${blocks.map(b => `
+        <tr>
+          <td><a href="#" onclick="loadBlock('${b.hash}')" style="color:var(--primary);font-weight:700">${b.height}</a></td>
+          <td><a href="#" onclick="loadBlock('${b.hash}')" class="hash" title="${b.hash}">${shortHash(b.hash,24)}</a></td>
+          <td><span class="badge badge-green">${b.txcount}</span></td>
+          <td>${(b.size/1024).toFixed(2)} KB</td>
+          <td style="color:var(--muted)">${fmtTime(b.time)}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    document.getElementById('btnPrev').disabled = currentPage === 0;
+    document.getElementById('btnNext').disabled = blocks.length < PAGE_SIZE;
+    document.getElementById('pageInfo').textContent = `Page ${currentPage+1}`;
+  } catch(e) {
+    el.innerHTML = `<div class="err">Error loading blocks: ${e.message}</div>`;
+  }
+}
+
+function prevPage() { if (currentPage > 0) { currentPage--; loadBlocks(); } }
+function nextPage() { currentPage++; loadBlocks(); }
+
+async function loadBlock(hash) {
+  showPage('block');
+  document.getElementById('blockDetail').innerHTML = '<div class="loading">Loading...</div>';
+  document.getElementById('blockTxCard').style.display = 'none';
+  try {
+    const b = await get(`/api/block/${hash}`);
+    document.getElementById('blockDetail').innerHTML = `
+      <div class="detail-grid">
+        <div class="detail-key">Height</div><div class="detail-val" style="color:var(--primary);font-weight:700">${b.height}</div>
+        <div class="detail-key">Hash</div><div class="detail-val">${b.hash}</div>
+        <div class="detail-key">Time</div><div class="detail-val">${fmtTime(b.time)}</div>
+        <div class="detail-key">Transactions</div><div class="detail-val">${b.tx?.length || 0}</div>
+        <div class="detail-key">Size</div><div class="detail-val">${b.size ? (b.size/1024).toFixed(2)+' KB' : '—'}</div>
+        <div class="detail-key">Difficulty</div><div class="detail-val">${b.difficulty}</div>
+        <div class="detail-key">Nonce</div><div class="detail-val">${b.nonce64 || b.nonce}</div>
+        <div class="detail-key">Bits</div><div class="detail-val">${b.bits}</div>
+        <div class="detail-key">Previous Block</div><div class="detail-val">${b.previousblockhash ? `<a href="#" onclick="loadBlock('${b.previousblockhash}')">${shortHash(b.previousblockhash,24)}</a>` : 'Genesis'}</div>
+        ${b.nextblockhash ? `<div class="detail-key">Next Block</div><div class="detail-val"><a href="#" onclick="loadBlock('${b.nextblockhash}')">${shortHash(b.nextblockhash,24)}</a></div>` : ''}
+      </div>`;
+    if (b.tx && b.tx.length) {
+      document.getElementById('blockTxCard').style.display = 'block';
+      document.getElementById('blockTxs').innerHTML = `<table>
+        <thead><tr><th>TXID</th><th>Outputs</th><th>Amount</th></tr></thead>
+        <tbody>${b.tx.map(t => {
+          const txid = typeof t === 'string' ? t : t.txid;
+          const vout = typeof t === 'object' ? t.vout : [];
+          const amt = vout ? vout.reduce((s,o) => s + (o.value||0), 0) : 0;
+          return `<tr>
+            <td><a href="#" onclick="loadTx('${txid}')" class="hash" title="${txid}">${shortHash(txid,32)}</a></td>
+            <td>${vout ? vout.length : '—'}</td>
+            <td style="color:var(--green)">${fmtHLC(amt)}</td>
+          </tr>`;
+        }).join('')}</tbody></table>`;
+    }
+  } catch(e) {
+    document.getElementById('blockDetail').innerHTML = `<div class="err">Block not found</div>`;
+  }
+}
+
+async function loadTx(txid) {
+  showPage('tx');
+  document.getElementById('txDetail').innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    const tx = await get(`/api/tx/${txid}`);
+    const inputs = tx.vin || [];
+    const outputs = tx.vout || [];
+    const totalOut = outputs.reduce((s,o) => s + (o.value||0), 0);
+    document.getElementById('txDetail').innerHTML = `
+      <div class="detail-grid">
+        <div class="detail-key">TXID</div><div class="detail-val">${tx.txid}</div>
+        <div class="detail-key">Block</div><div class="detail-val">${tx.blockhash ? `<a href="#" onclick="loadBlock('${tx.blockhash}')">${shortHash(tx.blockhash,24)}</a>` : 'Unconfirmed'}</div>
+        <div class="detail-key">Time</div><div class="detail-val">${tx.time ? fmtTime(tx.time) : '—'}</div>
+        <div class="detail-key">Size</div><div class="detail-val">${tx.size || '—'} bytes</div>
+        <div class="detail-key">Total Output</div><div class="detail-val" style="color:var(--green)">${fmtHLC(totalOut)}</div>
+      </div>
+      <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Inputs (${inputs.length})</div>
+          ${inputs.map(inp => `<div style="background:#0a0a18;border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;font-size:11px">
+            ${inp.coinbase ? '<span style="color:var(--primary)">⛏ Coinbase (new coins)</span>' : `<a href="#" onclick="loadAddress('${inp.addr||''}')">${inp.addr||shortHash(inp.txid||'',16)}</a>`}
+          </div>`).join('')}
+        </div>
+        <div>
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Outputs (${outputs.length})</div>
+          ${outputs.map(out => `<div style="background:#0a0a18;border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;font-size:11px;display:flex;justify-content:space-between;align-items:center">
+            <a href="#" onclick="loadAddress('${(out.scriptPubKey?.addresses||[])[0]||''}')">${(out.scriptPubKey?.addresses||[])[0]||'OP_RETURN'}</a>
+            <span style="color:var(--green);margin-left:8px">${fmtHLC(out.value||0)}</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
+  } catch(e) {
+    document.getElementById('txDetail').innerHTML = `<div class="err">Transaction not found</div>`;
+  }
+}
+
+async function loadAddress(addr) {
+  if (!addr) return;
+  showPage('address');
+  document.getElementById('addressDetail').innerHTML = '<div class="loading">Loading...</div>';
+  document.getElementById('addressTxs').innerHTML = '';
+  try {
+    const d = await get(`/api/address/${addr}`);
+    document.getElementById('addressDetail').innerHTML = `
+      <div class="detail-grid">
+        <div class="detail-key">Address</div><div class="detail-val" style="color:var(--primary)">${d.address}</div>
+        <div class="detail-key">Balance</div><div class="detail-val" style="color:var(--green);font-size:18px;font-weight:700">${fmtHLC(d.balance)}</div>
+        <div class="detail-key">Total Received</div><div class="detail-val">${fmtHLC(d.received)}</div>
+        <div class="detail-key">Transactions</div><div class="detail-val">${d.transactions?.length || 0}</div>
+      </div>`;
+    if (d.transactions?.length) {
+      document.getElementById('addressTxs').innerHTML = `<table>
+        <thead><tr><th>TXID</th><th>Type</th><th>Amount</th><th>Confirmations</th></tr></thead>
+        <tbody>${d.transactions.map(t => `<tr>
+          <td><a href="#" onclick="loadTx('${t.txid}')" class="hash">${shortHash(t.txid,24)}</a></td>
+          <td><span class="badge ${t.type==='receive'?'badge-green':'badge-gold'}">${t.type}</span></td>
+          <td style="color:${t.amount>0?'var(--green)':'var(--red)'}">${fmtHLC(t.amount)}</td>
+          <td style="color:var(--muted)">${t.confirmations}</td>
+        </tr>`).join('')}</tbody></table>`;
+    }
+  } catch(e) {
+    document.getElementById('addressDetail').innerHTML = `<div class="err">Address not found or no transactions</div>`;
+  }
+}
+
+async function loadRichlist() {
+  const el = document.getElementById('richlistTable');
+  el.innerHTML = '<div class="loading">Loading top wallets...</div>';
+  try {
+    const d = await get('/api/richlist');
+    const addrs = d.addresses || [];
+    if (!addrs.length) { el.innerHTML = '<div class="loading">No data yet. Mining in progress...</div>'; return; }
+    el.innerHTML = `
+      <div style="color:var(--muted);font-size:11px;margin-bottom:12px">Total tracked supply: ${fmtHLC(d.supply)}</div>
+      <table>
+        <thead><tr><th>Rank</th><th>Address</th><th>Balance</th><th>Share</th><th></th></tr></thead>
+        <tbody>${addrs.map((a,i) => `<tr>
+          <td style="color:var(--muted)">#${i+1}</td>
+          <td><a href="#" onclick="loadAddress('${a.address}')" class="hash" title="${a.address}" style="max-width:300px">${a.address}</a></td>
+          <td style="color:var(--green);font-weight:700">${fmtHLC(a.balance)}</td>
+          <td>${a.percent?.toFixed(2)}%</td>
+          <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(a.percent||0,100)}%"></div></div></td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+  } catch(e) {
+    el.innerHTML = `<div class="err">Error: ${e.message}</div>`;
+  }
+}
+
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  try {
+    const d = await get(`/api/search?q=${encodeURIComponent(q)}`);
+    if (d.type === 'block') loadBlock(d.hash || q);
+    else if (d.type === 'tx') loadTx(d.value);
+    else if (d.type === 'address') loadAddress(d.value);
+    else alert('Not found');
+  } catch(e) {
+    alert('Not found');
+  }
+}
+
+// Init
+loadStats();
+loadBlocks();
+setInterval(loadStats, 30000);
+setInterval(() => { if (document.getElementById('page-home').classList.contains('active')) loadBlocks(); }, 30000);
+</script>
+</body>
+</html>
