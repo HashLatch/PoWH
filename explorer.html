@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HashLatch Explorer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>⚡</text></svg>">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
 :root{--bg:#080810;--card:#0f0f1a;--border:#1e1e35;--primary:#f0b429;--green:#22c55e;--red:#ef4444;--muted:#555570;--text:#e2e2f0}
@@ -142,7 +143,7 @@ tr:hover td{background:rgba(240,180,41,0.03)}
 </div>
 
 <script>
-const API = '';  // same origin
+const API = window.location.origin;
 let currentPage = 0;
 const PAGE_SIZE = 20;
 let totalBlocks = 0;
