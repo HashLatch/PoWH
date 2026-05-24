@@ -499,10 +499,11 @@ async function loadWallets(){
 async function getBalances(){
   for(const w of walletData){
     try{
-      const r=await fetch(`${API.replace('admin.','api.')}/api/balance/${w.address}`);
+      const r=await fetch(`${API}/api/admin/balance/${w.address}`);
       const d=await r.json();
-      w._bal=d.balance??d.result??0;
-    }catch{w._bal=null;}
+      w._bal=d.balance??0;
+      w._immature=d.immature??0;
+    }catch{w._bal=null;w._immature=null;}
   }
   renderWallets();
 }
@@ -524,7 +525,7 @@ function renderWallets(){
               <button class="copy-btn" onclick="copyText('${w.address}')">copy</button>
               ${w.label?`<div style="color:var(--muted);font-size:10px">${w.label}</div>`:''}
             </td>
-            <td style="color:var(--green);font-weight:700">${w._bal!=null?Number(w._bal).toFixed(4)+' HLC':'—'}</td>
+            <td style="color:var(--green);font-weight:700">${w._bal!=null?Number(w._bal).toFixed(4)+' HLC':'—'}${w._immature?`<br><span style="color:var(--muted);font-size:10px">${Number(w._immature).toFixed(2)} immature</span>`:''}</td>
             <td style="color:var(--muted);font-size:11px">${w.created?w.created.slice(0,16):'—'}</td>
             <td>
               <div style="display:flex;gap:4px">
@@ -539,10 +540,15 @@ function renderWallets(){
 
 function showSeed(i){
   const w=walletData[i];
-  if(!w||!w.seed){toast('No seed saved for this wallet',true);return;}
-  const words=w.seed.trim().split(/\s+/);
-  document.getElementById('seedDisplay').innerHTML=words.map((wd,j)=>`<div class="seed-word"><span>${j+1}</span>${wd}</div>`).join('');
-  document.getElementById('seedFull').value=w.seed;
+  const key = w.seed || w.privkey || '';
+  if(!key){toast('No seed/key saved for this wallet',true);return;}
+  const isPrivkey = !key.includes(' ');
+  const words = isPrivkey ? [key] : key.trim().split(/\s+/);
+  document.getElementById('seedDisplay').innerHTML = isPrivkey
+    ? `<div style="grid-column:1/-1;background:#050510;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;word-break:break-all;color:var(--primary)">${key}</div>
+       <div style="grid-column:1/-1;color:var(--muted);font-size:10px;margin-top:4px">⚠ This is your private key (WIF format). Keep it secret!</div>`
+    : words.map((wd,j)=>`<div class="seed-word"><span>${j+1}</span>${wd}</div>`).join('');
+  document.getElementById('seedFull').value=key;
   openModal('modalSeed');
 }
 
