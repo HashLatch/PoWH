@@ -427,6 +427,8 @@ static UniValue solvebounty(const JSONRPCRequest& request)
 
     uint256 txid = ParseHashV(request.params[0], "bounty_txid");
     std::string solution = request.params[1].get_str();
+    if (solution.empty() || solution.size() > 1024)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Solution must be 1-1024 bytes");
     std::string payoutAddr = request.params[2].get_str();
 
     RebuildBountyIndex();
