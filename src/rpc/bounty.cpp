@@ -57,13 +57,31 @@ static UniValue createbounty(const JSONRPCRequest& request)
     CKeyID keyID;
     {
         LOCK(pwallet->cs_wallet);
+        CAmount bestBalance = -1;
+        // Find address with highest confirmed balance
         for (const auto& entry : pwallet->mapAddressBook) {
             CTxDestination dest = entry.first;
-            if (dest.type() == typeid(CKeyID)) {
-                keyID = boost::get<CKeyID>(dest);
-                break;
+            if (dest.type() != typeid(CKeyID)) continue;
+            CKeyID kid = boost::get<CKeyID>(dest);
+            CAmount bal = pwallet->GetBalance();
+            // Get balance for this specific address via map
+            CAmount addrBal = 0;
+            for (const auto& coin : pwallet->mapWallet) {
+                for (const auto& out : coin.second.tx->vout) {
+                    CTxDestination d;
+                    if (ExtractDestination(out.scriptPubKey, d) && d == dest) {
+                        if (coin.second.GetDepthInMainChain() > 0)
+                            addrBal += out.nValue;
+                    }
+                }
+            }
+            if (addrBal > bestBalance) {
+                bestBalance = addrBal;
+                keyID = kid;
             }
         }
+        if (keyID.IsNull())
+            throw JSONRPCError(RPC_WALLET_ERROR, "No usable address found in wallet");
         CKey key;
         if (!pwallet->GetKey(keyID, key))
             throw JSONRPCError(RPC_WALLET_ERROR, "Unable to get creator key");
