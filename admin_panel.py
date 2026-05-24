@@ -273,8 +273,30 @@ def get_logs(service):
     except:
         return jsonify({"log": "Log not available"})
 
-@app.route('/api/admin/wallets')
-def get_wallets():
+@app.route('/api/admin/balance/<address>')
+def get_balance(address):
+    try:
+        r = subprocess.run([CLI] + CLI_ARGS + ['listtransactions', '*', '9999', '0', 'true'],
+            capture_output=True, text=True, timeout=15)
+        txs = json.loads(r.stdout.strip()) if r.returncode == 0 else []
+        
+        balance = 0
+        immature = 0
+        for t in txs:
+            if t.get('address') != address:
+                continue
+            cat = t.get('category', '')
+            amt = t.get('amount', 0)
+            if cat == 'receive':
+                balance += amt
+            elif cat in ('immature', 'generate'):
+                immature += amt
+        
+        return jsonify({"address": address, "balance": round(balance, 8), "immature": round(immature, 8)})
+    except Exception as e:
+        return jsonify({"error": str(e), "balance": 0, "immature": 0})
+
+
     try:
         with open(WALLETS_FILE, 'r') as f:
             return jsonify(json.load(f))
