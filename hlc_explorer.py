@@ -37,6 +37,8 @@ def index():
         return f.read()
 
 
+
+@app.route('/api/info')
 def info():
     chain, _ = rpc(["getblockchaininfo"])
     net, _ = rpc(["getnetworkinfo"])
