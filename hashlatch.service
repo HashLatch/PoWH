@@ -1,0 +1,18 @@
+[Unit]
+Description=HashLatch Node
+After=network.target
+
+[Service]
+Type=forking
+User=dstrychalski
+WorkingDirectory=/home/dstrychalski/PoWH
+ExecStart=/home/dstrychalski/PoWH/src/hashlatchd -daemon -server \
+  -rpcuser=hashlatch -rpcpassword=test123 -rpcport=8766 \
+  -rpcallowip=127.0.0.1 -txindex=1 -bypassdownload=1 \
+  -listen=1 -port=18767 -rpcworkqueue=64 -rpcthreads=4
+ExecStop=/home/dstrychalski/PoWH/src/hashlatch-cli -rpcuser=hashlatch -rpcpassword=test123 -rpcport=8766 stop
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
