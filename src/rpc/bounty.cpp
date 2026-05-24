@@ -18,7 +18,6 @@
 #include <utilstrencodings.h>
 #include <crypto/sha256.h>
 #include <random.h>
-#include <key_io.h>
 
 #ifdef ENABLE_WALLET
 #include <wallet/coincontrol.h>
