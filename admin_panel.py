@@ -20,7 +20,12 @@ WALLETS_FILE = "/home/dstrychalski/.hlc_wallets.json"
 DATA_DIR = "/home/dstrychalski/.powh"
 
 def cli(cmd):
-    r = subprocess.run([CLI] + CLI_ARGS + cmd.split(), capture_output=True, text=True, timeout=10)
+    import shlex, re
+    # Reject any command with shell special characters
+    if re.search(r'[;&|`$(){}\[\]<>!]', cmd):
+        return "Error: invalid characters in command"
+    parts = shlex.split(cmd)
+    r = subprocess.run([CLI] + CLI_ARGS + parts, capture_output=True, text=True, timeout=10)
     return r.stdout.strip()
 
 def is_node_running():
@@ -325,7 +330,9 @@ def rpc_command():
     allowed = ['getblockchaininfo','getblockcount','getwalletinfo','getnetworkinfo',
                 'listreceivedbyaddress','getblock','gettransaction','getblockhash',
                 'getmininginfo','getnewaddress','listbounties','getbalance']
-    if not any(cmd.startswith(a) for a in allowed):
+    # Use exact first-word match to prevent injection
+    first_word = cmd.strip().split()[0] if cmd.strip() else ''
+    if first_word not in allowed:
         return jsonify({"error": "Command not allowed"}), 403
     result = cli(cmd)
     return jsonify({"result": result})
