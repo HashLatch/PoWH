@@ -105,8 +105,8 @@ public:
         consensus.nBIP66Enabled = true;
         consensus.nSegwitEnabled = true;
         consensus.nCSVEnabled = true;
-        consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.kawpowLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.powLimit = uint256S("000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.kawpowLimit = uint256S("000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 2016 * 60;
         consensus.nPowTargetSpacing = 2 * 60;
 		consensus.fPowAllowMinDifficultyBlocks = false;
@@ -156,7 +156,7 @@ public:
 
         // Genesis block for PoWH mainnet - fair launch 2026
         // Timestamp: Saturday May 24, 2026 00:00:00 UTC
-        genesis = CreateGenesisBlock(1748217600, 0, 0x207fffff, 4, 50 * COIN);
+        genesis = CreateGenesisBlock(1748217600, 0, 0x1e00ffff, 4, 10 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
 
 //         assert(consensus.hashGenesisBlock == uint256S("0000006b444bc2f2ffe627be9d9e7e7a0730000870ef6eb6da46c8eae389df90"));
