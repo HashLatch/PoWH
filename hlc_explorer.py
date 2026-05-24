@@ -136,26 +136,36 @@ def address(address):
 
 @app.route('/api/richlist')
 def richlist():
-    """Build richlist from listreceivedbyaddress"""
-    data, err = rpc(["listreceivedbyaddress", "0", "true"])
-    if not data:
-        return jsonify({"addresses": [], "total": 0})
-    
-    balances = []
-    for entry in data:
-        addr = entry.get("address", "")
-        bal = entry.get("amount", 0)
-        if addr and bal > 0:
-            balances.append({"address": addr, "balance": bal})
-    
-    balances.sort(key=lambda x: x["balance"], reverse=True)
-    top100 = balances[:100]
-    
-    total_supply = sum(b["balance"] for b in balances)
-    for b in top100:
-        b["percent"] = round(b["balance"] / total_supply * 100, 4) if total_supply > 0 else 0
-    
-    return jsonify({"addresses": top100, "total": len(top100), "supply": total_supply})
+    """Build richlist from transaction history"""
+    try:
+        # Get all transactions including coinbase
+        txs, _ = rpc(["listtransactions", "*", "9999", "0", "true"])
+        if not txs:
+            return jsonify({"addresses": [], "total": 0, "supply": 0})
+        
+        balances = {}
+        for t in txs:
+            addr = t.get("address", "")
+            if not addr:
+                continue
+            amt = t.get("amount", 0)
+            cat = t.get("category", "")
+            if cat in ("receive", "immature", "generate"):
+                balances[addr] = balances.get(addr, 0) + amt
+            elif cat == "send":
+                balances[addr] = balances.get(addr, 0) - amt
+
+        result = [{"address": a, "balance": round(b, 8)} for a, b in balances.items() if b > 0]
+        result.sort(key=lambda x: x["balance"], reverse=True)
+        top100 = result[:100]
+        
+        total_supply = sum(x["balance"] for x in result)
+        for b in top100:
+            b["percent"] = round(b["balance"] / total_supply * 100, 4) if total_supply > 0 else 0
+        
+        return jsonify({"addresses": top100, "total": len(top100), "supply": round(total_supply, 8)})
+    except Exception as e:
+        return jsonify({"error": str(e), "addresses": [], "total": 0, "supply": 0})
 
 @app.route('/api/search')
 def search():
