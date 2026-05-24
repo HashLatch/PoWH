@@ -37,6 +37,7 @@ def index():
         return f.read()
 
 
+@app.route('/api/info')
 def info():
     chain, _ = rpc(["getblockchaininfo"])
     net, _ = rpc(["getnetworkinfo"])
@@ -55,7 +56,7 @@ def info():
         "symbol": "HLC",
         "algorithm": "KawPow",
         "block_time": 120,
-        "block_reward": 50,
+        "block_reward": 10,
     })
 
 @app.route('/api/blocks')
