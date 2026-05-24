@@ -28,7 +28,15 @@ def rpc_str(cmd):
     except Exception as e:
         return None, str(e)
 
-@app.route('/api/info')
+import os
+
+@app.route('/')
+def index():
+    html_path = os.path.join(os.path.dirname(__file__), 'explorer.html')
+    with open(html_path, 'r') as f:
+        return f.read()
+
+
 def info():
     chain, _ = rpc(["getblockchaininfo"])
     net, _ = rpc(["getnetworkinfo"])
