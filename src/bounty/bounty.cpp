@@ -5,6 +5,7 @@
 #include <chain.h>
 #include <validation.h>
 #include <txmempool.h>
+#include <chainparams.h>
 
 std::map<uint256, BountyEntry> g_bounty_index;
 std::map<std::string, CommitEntry> g_commit_index;
