@@ -93,18 +93,11 @@ static UniValue createbounty(const JSONRPCRequest& request)
         << deadlineHeight << OP_CHECKLOCKTIMEVERIFY << OP_DROP
         << ToByteVector(creatorPubKey) << OP_CHECKSIG;
 
-    // Use a new address from wallet as escrow (standard P2PKH, always accepted)
-    CPubKey escrowPubKey;
-    {
-        LOCK(pwallet->cs_wallet);
-        CReserveKey rkey(pwallet);
-        if (!rkey.GetReservedKey(escrowPubKey, true))
-            throw JSONRPCError(RPC_WALLET_ERROR, "Cannot get escrow key");
-        rkey.KeepKey();
-    }
-    CKeyID escrowKeyID = escrowPubKey.GetID();
-    CScript p2pkhScript = GetScriptForDestination(escrowKeyID);
-    std::string escrowAddress = EncodeDestination(escrowKeyID);
+    // Build hashlock script: OP_SHA256 <targetHash> OP_EQUAL
+    // Spendable by anyone who provides preimage: SHA256(preimage) == targetHash
+    std::vector<unsigned char> targetHashBytes = ParseHex(targetHash);
+    CScript hashlockScript;
+    hashlockScript << OP_SHA256 << targetHashBytes << OP_EQUAL;
 
     // OP_RETURN metadata — visible to all nodes, indexed by RebuildBountyIndex
     std::string metadata = BuildBountyMetadata(targetHash, deadlineHeight);
@@ -112,9 +105,9 @@ static UniValue createbounty(const JSONRPCRequest& request)
         << OP_RETURN
         << std::vector<unsigned char>(metadata.begin(), metadata.end());
 
-    // Build tx: P2PKH escrow + OP_RETURN
+    // Build tx: hashlock escrow + OP_RETURN
     std::vector<CRecipient> recipients;
-    recipients.push_back({p2pkhScript, amount, false});
+    recipients.push_back({hashlockScript, amount, false});
     recipients.push_back({opReturnScript, 0, false});
 
     CReserveKey reservekey(pwallet);
@@ -148,7 +141,7 @@ static UniValue createbounty(const JSONRPCRequest& request)
     result.pushKV("deadline_block", deadlineHeight);
     result.pushKV("amount", ValueFromAmount(amount));
     result.pushKV("target_hash", targetHash);
-    result.pushKV("escrow_address", escrowAddress);
+    result.pushKV("script_type", "OP_SHA256 hashlock");
     result.pushKV("metadata", metadata);
     return result;
 #else
