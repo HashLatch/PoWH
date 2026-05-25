@@ -489,7 +489,11 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->mix_hash       = diskindex.mix_hash;
                 pindexNew->nHeight        = diskindex.nHeight;
 
-                if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, consensusParams))
+                // Skip PoW check for the genesis block (height 0). The genesis
+                // block uses a fixed nonce and is not mined to the PoW target;
+                // validating it here would fail on every restart.
+                if (pindexNew->nHeight != 0 &&
+                    !CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, consensusParams))
                     return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
 
                 pcursor->Next();
