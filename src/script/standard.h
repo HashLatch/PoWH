@@ -71,6 +71,8 @@ enum txnouttype
     TX_TRANSFER_ASSET = 10,
     TX_RESTRICTED_ASSET_DATA = 11, //!< unspendable OP_RAVEN_ASSET script that carries data
     /** RVN END */
+    /** HLC Bounty */
+    TX_HASHLOCK = 12, //!< OP_SHA256 <hash> OP_EQUALVERIFY OP_DROP OP_TRUE - hashlock bounty escrow
 };
 
 class CNoDestination {
