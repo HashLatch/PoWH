@@ -1,0 +1,8 @@
+[Unit]
+Description=HashLatch Watchdog - restart dead services
+After=hashlatch.service
+
+[Service]
+Type=oneshot
+User=dstrychalski
+ExecStart=/home/dstrychalski/hashlatch-watchdog.sh
