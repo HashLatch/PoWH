@@ -308,6 +308,12 @@ def get_balance(address):
     except:
         return jsonify([])
 
+@app.route('/api/admin/wallets', methods=['GET'])
+def get_wallets():
+    try:
+        with open(WALLETS_FILE,'r') as f: return jsonify(json.load(f))
+    except: return jsonify([])
+
 @app.route('/api/admin/wallets', methods=['POST'])
 def save_wallets():
     try:
