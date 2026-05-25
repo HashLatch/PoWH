@@ -131,9 +131,12 @@ void RebuildBountyIndex(int fromHeight)
                 BountyEntry entry;
                 if (ParseBountyMetadata(out.scriptPubKey, entry)) {
                     entry.bountyTxid = txid;
-                    // Find P2SH output (the one before OP_RETURN)
+                    // Find the hashlock output (OP_SHA256 <32> OP_EQUAL = 35 bytes)
                     for (int j = 0; j < (int)tx->vout.size(); j++) {
-                        if (j != i && tx->vout[j].scriptPubKey.IsPayToScriptHash()) {
+                        const CScript& spk = tx->vout[j].scriptPubKey;
+                        if (j != i && spk.size() == 35 &&
+                            spk[0] == OP_SHA256 && spk[1] == 0x20 &&
+                            spk[34] == OP_EQUAL) {
                             bountyVout = j;
                             bountyAmount = tx->vout[j].nValue;
                             break;
