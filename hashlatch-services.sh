@@ -1,25 +1,28 @@
 #!/bin/bash
-# HashLatch — Start all services
+# HashLatch — Start all auxiliary services (stratum, api, admin, explorer, tunnel)
 HOME_DIR="/home/dstrychalski"
 export NVM_DIR="$HOME_DIR/.nvm"
 source "$NVM_DIR/nvm.sh" 2>/dev/null
 nvm use 16 2>/dev/null
 
-# Wait for node to be ready
+CLI="$HOME_DIR/PoWH/src/hashlatch-cli -rpcuser=hashlatch -rpcpassword=test123 -rpcport=8766"
+
+# Wait for node RPC to be ready (up to 60s)
 for i in $(seq 1 30); do
-    if $HOME_DIR/PoWH/src/hashlatch-cli -rpcuser=hashlatch -rpcpassword=test123 -rpcport=8766 getblockchaininfo > /dev/null 2>&1; then
+    if $CLI getblockchaininfo > /dev/null 2>&1; then
+        echo "Node RPC ready after $((i*2))s"
         break
     fi
     sleep 2
 done
 
-# Kill old
+# Kill any stale instances and free ports
 pkill -f "node server.js" 2>/dev/null || true
 pkill -f hlc_explorer 2>/dev/null || true
 pkill -f hashlatch_api 2>/dev/null || true
 pkill -f admin_panel 2>/dev/null || true
 pkill -f cloudflared 2>/dev/null || true
-fuser -k 3001/tcp 2>/dev/null || true
+for p in 3052 3001 5000 5001; do fuser -k ${p}/tcp 2>/dev/null || true; done
 sleep 3
 
 # Start all services
