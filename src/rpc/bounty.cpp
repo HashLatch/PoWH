@@ -93,8 +93,18 @@ static UniValue createbounty(const JSONRPCRequest& request)
         << deadlineHeight << OP_CHECKLOCKTIMEVERIFY << OP_DROP
         << ToByteVector(creatorPubKey) << OP_CHECKSIG;
 
-    CScriptID scriptID(redeemScript);
-    CScript p2shScript = GetScriptForDestination(scriptID);
+    // Use a new address from wallet as escrow (standard P2PKH, always accepted)
+    CPubKey escrowPubKey;
+    {
+        LOCK(pwallet->cs_wallet);
+        CReserveKey rkey(pwallet);
+        if (!rkey.GetReservedKey(escrowPubKey, true))
+            throw JSONRPCError(RPC_WALLET_ERROR, "Cannot get escrow key");
+        rkey.KeepKey();
+    }
+    CKeyID escrowKeyID = escrowPubKey.GetID();
+    CScript p2pkhScript = GetScriptForDestination(escrowKeyID);
+    std::string escrowAddress = EncodeDestination(escrowKeyID);
 
     // OP_RETURN metadata — visible to all nodes, indexed by RebuildBountyIndex
     std::string metadata = BuildBountyMetadata(targetHash, deadlineHeight);
@@ -102,13 +112,9 @@ static UniValue createbounty(const JSONRPCRequest& request)
         << OP_RETURN
         << std::vector<unsigned char>(metadata.begin(), metadata.end());
 
-    // Store redeemScript in wallet BEFORE creating transaction
-    // This is required so the node accepts P2SH output as standard
-    pwallet->AddCScript(redeemScript);
-
-    // Build tx: P2SH escrow + OP_RETURN
+    // Build tx: P2PKH escrow + OP_RETURN
     std::vector<CRecipient> recipients;
-    recipients.push_back({p2shScript, amount, false});
+    recipients.push_back({p2pkhScript, amount, false});
     recipients.push_back({opReturnScript, 0, false});
 
     CReserveKey reservekey(pwallet);
@@ -142,7 +148,7 @@ static UniValue createbounty(const JSONRPCRequest& request)
     result.pushKV("deadline_block", deadlineHeight);
     result.pushKV("amount", ValueFromAmount(amount));
     result.pushKV("target_hash", targetHash);
-    result.pushKV("p2sh_address", EncodeDestination(scriptID));
+    result.pushKV("escrow_address", escrowAddress);
     result.pushKV("metadata", metadata);
     return result;
 #else
