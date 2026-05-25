@@ -34,6 +34,7 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_RESTRICTED_ASSET_DATA: return "nullassetdata";
     case TX_WITNESS_V0_KEYHASH: return "witness_v0_keyhash";
     case TX_WITNESS_V0_SCRIPTHASH: return "witness_v0_scripthash";
+    case TX_HASHLOCK: return "hashlock";
 
     /** RVN START */
     case TX_NEW_ASSET: return ASSET_NEW_STRING;
@@ -119,6 +120,19 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::v
             std::vector<unsigned char> hashBytes(scriptPubKey.begin() + 2, scriptPubKey.begin() + 22);
             vSolutionsRet.push_back(hashBytes);
         }
+        return true;
+    }
+
+    // HLC Bounty hashlock: OP_SHA256 <32-byte-hash> OP_EQUAL
+    // Script: a8 20 <32 bytes> 87
+    if (scriptPubKey.size() == 35 &&
+        scriptPubKey[0] == OP_SHA256 &&
+        scriptPubKey[1] == 0x20 &&  // push 32 bytes
+        scriptPubKey[34] == OP_EQUAL)
+    {
+        typeRet = TX_HASHLOCK;
+        std::vector<unsigned char> hashBytes(scriptPubKey.begin() + 2, scriptPubKey.begin() + 34);
+        vSolutionsRet.push_back(hashBytes);
         return true;
     }
 
