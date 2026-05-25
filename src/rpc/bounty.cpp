@@ -5,6 +5,8 @@
 #include <chain.h>
 #include <validation.h>
 #include <consensus/validation.h>
+#include <txmempool.h>
+#include <coins.h>
 #include <net.h>
 #include <core_io.h>
 #include <pubkey.h>
@@ -418,12 +420,16 @@ static UniValue solvebounty(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 3)
         throw std::runtime_error(
             "solvebounty bounty_txid solution payout_address\n"
-            "Solve a bounty directly (no commit-reveal). Use commitbounty+revealbounty for frontrun protection.");
+            "Solve a bounty by spending the hashlock UTXO with the preimage.\n"
+            "This is fully trustless: the locked coins are released by the script,\n"
+            "not paid from anyone's wallet.");
 
 #ifdef ENABLE_WALLET
     CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
     if (!pwallet) throw JSONRPCError(RPC_WALLET_ERROR, "Wallet not found");
-    EnsureWalletIsUnlocked(pwallet);
+#endif
+
+    LOCK(cs_main);
 
     uint256 txid = ParseHashV(request.params[0], "bounty_txid");
     std::string solution = request.params[1].get_str();
@@ -440,6 +446,7 @@ static UniValue solvebounty(const JSONRPCRequest& request)
     if (chainActive.Height() >= it->second.deadlineHeight)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Bounty deadline passed");
 
+    // Verify the solution matches the target hash
     unsigned char hash[CSHA256::OUTPUT_SIZE];
     CSHA256().Write((const unsigned char*)solution.data(), solution.size()).Finalize(hash);
     std::string computedHash = HexStr(hash, hash + CSHA256::OUTPUT_SIZE);
@@ -450,35 +457,62 @@ static UniValue solvebounty(const JSONRPCRequest& request)
     if (!IsValidDestination(dest))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid payout address");
 
+    int voutIndex = it->second.voutIndex;
+    if (voutIndex < 0)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Bounty hashlock output not found");
+
     CAmount reward = it->second.amount;
-    std::vector<CRecipient> recipients;
-    recipients.push_back({GetScriptForDestination(dest), reward, false});
 
-    CReserveKey reserveKey(pwallet);
-    CAmount nFeeRet = 0;
-    int nChangePosInOut = -1;
-    std::string error;
-    CWalletTx wtxPayout;
-    CCoinControl coinControl;
+    // Build a transaction that SPENDS the hashlock UTXO.
+    // scriptSig = <preimage> ; when concatenated with the hashlock
+    // scriptPubKey (OP_SHA256 <hash> OP_EQUAL) it evaluates true, releasing coins.
+    CMutableTransaction mtx;
+    CTxIn txin;
+    txin.prevout = COutPoint(txid, voutIndex);
+    txin.scriptSig = CScript() << std::vector<unsigned char>(solution.begin(), solution.end());
+    txin.nSequence = CTxIn::SEQUENCE_FINAL;
+    mtx.vin.push_back(txin);
 
-    if (!pwallet->CreateTransaction(recipients, wtxPayout, reserveKey, nFeeRet, nChangePosInOut, error, coinControl))
-        throw JSONRPCError(RPC_WALLET_ERROR, "Payout failed: " + error);
+    // Subtract a small fee from the reward for the miners
+    CAmount fee = 1000; // 0.00001 HLC flat fee
+    if (reward <= fee)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Bounty amount too small to cover fee");
+    CAmount payoutAmount = reward - fee;
 
+    CTxOut txout(payoutAmount, GetScriptForDestination(dest));
+    mtx.vout.push_back(txout);
+
+    CTransactionRef tx(MakeTransactionRef(std::move(mtx)));
+    const uint256& hashTx = tx->GetHash();
+
+    // Broadcast: accept to mempool then relay (same path as sendrawtransaction)
     CValidationState state;
-    if (!pwallet->CommitTransaction(wtxPayout, reserveKey, g_connman.get(), state))
-        throw JSONRPCError(RPC_WALLET_ERROR, "Commit failed: " + state.GetRejectReason());
+    bool fMissingInputs;
+    if (!AcceptToMemoryPool(mempool, state, tx, &fMissingInputs,
+                            nullptr, false, maxTxFee)) {
+        if (state.IsInvalid())
+            throw JSONRPCError(RPC_TRANSACTION_REJECTED,
+                strprintf("%i: %s", state.GetRejectCode(), state.GetRejectReason()));
+        if (fMissingInputs)
+            throw JSONRPCError(RPC_TRANSACTION_ERROR, "Missing inputs (hashlock already spent?)");
+        throw JSONRPCError(RPC_TRANSACTION_ERROR, state.GetRejectReason());
+    }
+
+    if (!g_connman)
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "P2P disabled");
+    CInv inv(MSG_TX, hashTx);
+    g_connman->ForEachNode([&inv](CNode* pnode) { pnode->PushInventory(inv); });
 
     it->second.solved = true;
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("status", "solved");
     result.pushKV("bounty_txid", txid.GetHex());
-    result.pushKV("payout_txid", wtxPayout.GetHash().GetHex());
-    result.pushKV("reward", ValueFromAmount(reward));
+    result.pushKV("spend_txid", hashTx.GetHex());
+    result.pushKV("payout_address", payoutAddr);
+    result.pushKV("reward", ValueFromAmount(payoutAmount));
+    result.pushKV("note", "Hashlock UTXO spent trustlessly via preimage");
     return result;
-#else
-    throw JSONRPCError(RPC_WALLET_ERROR, "Wallet disabled");
-#endif
 }
 
 static const CRPCCommand commands[] = {
