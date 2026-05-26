@@ -111,6 +111,7 @@ tr:hover td{background:rgba(255,255,255,0.02)}
     <div class="tabs">
       <button class="tab active" onclick="showTab('overview',this)">Overview</button>
       <button class="tab" onclick="showTab('wallets',this)">Wallets</button>
+      <button class="tab" onclick="showTab('oldwallets',this)">🔐 Old Wallets</button>
       <button class="tab" onclick="showTab('mining',this)">Mining</button>
       <button class="tab" onclick="showTab('services',this)">Services</button>
       <button class="tab" onclick="showTab('logs',this)">Logs</button>
@@ -225,6 +226,15 @@ tr:hover td{background:rgba(255,255,255,0.02)}
             t-rex -a kawpow -o stratum+tcp://34.185.173.154:3052 -u YOUR_ADDRESS.rig1 -p x
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- OLD WALLETS TAB -->
+    <div id="tab-oldwallets" style="display:none">
+      <div class="card">
+        <div class="card-title">🔐 Old Mining Wallets — Read Only</div>
+        <div style="color:var(--muted);font-size:11px;margin-bottom:14px">Adresy z okresu przed pełnym uruchomieniem. Klucze przechowywane tylko lokalnie na serwerze w ~/.hlc_wallets.json</div>
+        <div id="oldWalletsContainer">Loading...</div>
       </div>
     </div>
 
@@ -407,6 +417,7 @@ function showTab(name,el){
   if(name==='logs') fetchLog(currentLog);
   if(name==='wallets') loadWallets();
   if(name==='mining') loadMiners();
+  if(name==='oldwallets') loadOldWallets();
 }
 
 let _minerRefreshInterval=null;
@@ -767,6 +778,45 @@ async function doReset(){
     toast(d.message||'Reset complete');
     setTimeout(fetchStatus,5000);
   }catch(e){toast('Error: '+e.message,true);}
+}
+
+// OLD WALLETS
+const OLD_WALLETS = [
+  {label:"Instance cZ6Ah (383 blocks)", address:"cZ6AhXNM91T4EmeUDs4RPFUkVN8LYjnBeE", wif:"UuDE7TjnDo98fsc96qKPsN7PGZR8JXb4xuMxJjPZyPrywKAddnx6"},
+  {label:"Miner 98% co8z5", address:"co8z5Qfgdo86XyEFeS2DnQEsUxQcKjnTFG", wif:"UpcySTV658jy6uWV82Sx1rHG89hXyQSHZ7jMgxn3aDJ9EwKRVaSm"},
+  {label:"Instance cZYfc", address:"cZYfcfpwc7j9rMc2MbqDtDQmnBCEwLLiSf", wif:""},
+  {label:"Vast.ai chSMKd", address:"chSMKdYqCcHS8q76CB2uDLzwFuDfuXiwtv", wif:""},
+  {label:"Dev fee 2% ce6KY", address:"ce6KYfjYGUH5dzxXiBLfGEVArWgLRaLF3V", wif:"UvHWtS7dMbTV6THBZ43VzsooFQNkbSu5WsNGEae6tUyQHMj7LTsH"},
+  {label:"ch5yS1", address:"ch5yS1qSwvgtd3K1tTzaSGv5g7cHhCaRaY", wif:""},
+  {label:"cjRf1", address:"cjRf1PHu3h7DiQkmvtHUsmcbKNmFhBWH9f", wif:""},
+];
+
+async function loadOldWallets() {
+  const el = document.getElementById('oldWalletsContainer');
+  let html = '<table><thead><tr><th>Label</th><th>Address</th><th>Balance</th><th>WIF Key</th></tr></thead><tbody>';
+  for (const w of OLD_WALLETS) {
+    let bal = '...', imm = '';
+    try {
+      const r = await fetch(`${API}/api/admin/balance/${w.address}`);
+      const d = await r.json();
+      const total = ((d.balance||0)+(d.immature||0)).toFixed(4);
+      imm = d.immature > 0 ? `<br><span style="color:var(--muted);font-size:10px">${(d.immature||0).toFixed(2)} immature</span>` : '';
+      bal = `<span style="color:var(--primary);font-weight:700">${total} HLC</span>${imm}`;
+    } catch(e) { bal = '—'; }
+    const wifDisplay = w.wif
+      ? `<code style="font-size:9px;color:var(--green);word-break:break-all">${w.wif}</code>
+         <button class="copy-btn" onclick="copyText('${w.wif}')">copy</button>`
+      : '<span style="color:var(--muted);font-size:10px">see ~/.hlc_wallets.json</span>';
+    html += `<tr>
+      <td style="color:var(--muted);font-size:11px">${w.label}</td>
+      <td><code style="color:var(--primary);font-size:10px">${w.address}</code>
+          <button class="copy-btn" onclick="copyText('${w.address}')">copy</button></td>
+      <td>${bal}</td>
+      <td style="max-width:200px">${wifDisplay}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  el.innerHTML = html;
 }
 
 // MODALS
