@@ -97,20 +97,30 @@ def getseedphrase():
 
 @app.route('/api/bounties')
 def bounties():
-    data, err = cli("listunspent 0 9999999")
-    if err: return jsonify([]), 200
-    bounties_list = []
-    if isinstance(data, list):
-        for utxo in data:
-            if utxo.get("amount", 0) > 0:
-                bounties_list.append({
-                    "txid": utxo.get("txid"),
-                    "target_hash": utxo.get("address", ""),
-                    "amount": utxo.get("amount"),
-                    "deadline": "2026-12-31",
-                    "solved": False
-                })
-    return jsonify(bounties_list)
+    # Use the real bounty index from the node (OP_SHA256 hashlock bounties).
+    import json as j
+    data, err = cli("listbounties")
+    if err:
+        return jsonify([]), 200
+    try:
+        raw = j.loads(data) if isinstance(data, str) else data
+    except Exception:
+        return jsonify([]), 200
+    out = []
+    for b in (raw or []):
+        # Only show active, unsolved, unexpired bounties on the live feed
+        if b.get("solved") or b.get("reclaimed") or b.get("expired"):
+            continue
+        out.append({
+            "txid": b.get("txid"),
+            "target_hash": b.get("target_hash", ""),
+            "algorithm": b.get("algorithm", "SHA256"),
+            "amount": b.get("amount", 0),
+            "deadline_block": b.get("deadline_block"),
+            "blocks_remaining": b.get("blocks_remaining"),
+            "solved": bool(b.get("solved")),
+        })
+    return jsonify({"bounties": out})
 
 @app.route('/api/decode/<txid>')
 def decode(txid):
