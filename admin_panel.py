@@ -348,70 +348,121 @@ def rpc_command():
 
 @app.route('/api/admin/miners')
 def get_miners():
-    """Live miner monitoring: parses the stratum log for authorized workers,
-    their payout address, IP, share counts and last-seen time."""
+    import re, collections, time as time_mod
+    _cache = get_miners.__dict__
+    log_path = "/home/dstrychalski/stratum.log"
+    if not os.path.exists(log_path):
+        return jsonify({"miners": [], "total_workers": 0, "unique_addresses": 0, "unique_ips": 0, "network_hashrate": 0, "total_blocks_found": 0})
     try:
-        import re, collections
-        log_path = "/home/dstrychalski/stratum.log"
-        if not os.path.exists(log_path):
-            return jsonify({"miners": [], "total": 0, "active": 0})
-
-        # Read the tail of the (possibly binary) log safely as latin-1.
         with open(log_path, "rb") as f:
-            try:
-                f.seek(-3_000_000, 2)  # last ~3MB is plenty
-            except OSError:
-                f.seek(0)
+            try: f.seek(-6_000_000, 2)
+            except OSError: f.seek(0)
             data = f.read().decode("latin-1", errors="ignore")
 
-        # Worker line looks like: ..."params":["<address>.<rig>", ... "ip":"::ffff:1.2.3.4"
-        miners = collections.OrderedDict()
+        auth_re   = re.compile(r'mining\.authorize.*?"params":\["([a-zA-Z0-9]+)\.([^"]*)"')
+        submit_re = re.compile(r'mining\.submit.*?"params":\["([a-zA-Z0-9]+)\.([^"]*)"')
+        accept_re = re.compile(r'Share accepted from ([a-zA-Z0-9]+)\.([^\s]+)')
+        ip_re     = re.compile(r'"ip":"([^"]+)"')
+        lines = data.splitlines()
+        total_lines = len(lines)
 
-        # Track authorizations (address + ip)
-        auth_re = re.compile(r'mining\.authorize"[^}]*?"params":\["([a-zA-Z0-9]+)\.([^"]*)"')
-        ip_re = re.compile(r'"ip":"([^"]+)"')
-        # Submitted shares per worker
-        submit_re = re.compile(r'mining\.submit"[^}]*?"params":\["([a-zA-Z0-9]+)\.([^"]*)"')
-
-        # Build per-line scan to associate ip near a worker mention
-        for line in data.splitlines():
-            m = auth_re.search(line) or submit_re.search(line)
-            if not m:
-                continue
+        workers = collections.OrderedDict()
+        for i, line in enumerate(lines):
+            m = auth_re.search(line) or submit_re.search(line) or accept_re.search(line)
+            if not m: continue
             addr, rig = m.group(1), m.group(2)
             key = f"{addr}.{rig}"
             ipm = ip_re.search(line)
             ip = ipm.group(1).replace("::ffff:", "") if ipm else None
-            if key not in miners:
-                miners[key] = {"address": addr, "rig": rig, "ip": ip, "shares": 0}
-            if ip:
-                miners[key]["ip"] = ip
-            if "mining.submit" in line:
-                miners[key]["shares"] += 1
+            if key not in workers:
+                workers[key] = {"address": addr, "rig": rig, "ip": ip, "shares": 0, "last_line": 0}
+            if ip: workers[key]["ip"] = ip
+            if "submit" in line or "Share accepted" in line:
+                workers[key]["shares"] += 1
+                workers[key]["last_line"] = i
 
-        # Count shares per address from full data (more reliable)
         share_counts = collections.Counter()
-        for m in submit_re.finditer(data):
-            share_counts[f"{m.group(1)}.{m.group(2)}"] += 1
-        for key, info in miners.items():
-            info["shares"] = share_counts.get(key, info.get("shares", 0))
+        for m in submit_re.finditer(data): share_counts[f"{m.group(1)}.{m.group(2)}"] += 1
+        for m in accept_re.finditer(data): share_counts[f"{m.group(1)}.{m.group(2)}"] += 1
+        for key, info in workers.items():
+            info["shares"] = share_counts.get(key, info["shares"])
+            info["active"] = info["last_line"] > total_lines * 0.85
 
-        miner_list = list(miners.values())
-        miner_list.sort(key=lambda x: x["shares"], reverse=True)
+        # Blockchain scan with cache
+        tip_r = subprocess.run([CLI]+CLI_ARGS+['getblockcount'], capture_output=True, text=True, timeout=10)
+        tip = int(tip_r.stdout.strip()) if tip_r.returncode == 0 else 0
+        cached_tip = _cache.get('blocks_tip', -1)
+        blocks_per_addr = dict(_cache.get('blocks_data', {}))
+        if tip != cached_tip:
+            start = max(0, cached_tip + 1)
+            for h in range(start, tip + 1):
+                bh_r = subprocess.run([CLI]+CLI_ARGS+['getblockhash', str(h)], capture_output=True, text=True, timeout=5)
+                if bh_r.returncode != 0: continue
+                bl_r = subprocess.run([CLI]+CLI_ARGS+['getblock', bh_r.stdout.strip(), '2'], capture_output=True, text=True, timeout=15)
+                if bl_r.returncode != 0: continue
+                try:
+                    bl = json.loads(bl_r.stdout.strip())
+                    for vout in bl['tx'][0].get('vout', []):
+                        for a in vout.get('scriptPubKey', {}).get('addresses', []):
+                            if a != 'ce6KYfjYGUH5dzxXiBLfGEVArWgLRaLF3V':
+                                blocks_per_addr[a] = blocks_per_addr.get(a, 0) + 1
+                except: pass
+            _cache['blocks_data'] = blocks_per_addr
+            _cache['blocks_tip'] = tip
 
-        # Unique addresses and IPs as a quick summary
-        unique_addrs = len(set(m["address"] for m in miner_list))
-        unique_ips = len(set(m["ip"] for m in miner_list if m.get("ip")))
+        # Group workers by address
+        unique_addrs = list(set(w['address'] for w in workers.values()))
+        addr_miners = {}
+        for key, w in workers.items():
+            addr = w['address']
+            if addr not in addr_miners:
+                addr_miners[addr] = {
+                    'address': addr, 'rigs': [], 'ips': [],
+                    'shares': 0, 'active': False,
+                    'blocks_found': blocks_per_addr.get(addr, 0),
+                    'balance': 0, 'spendable': 0, 'immature': 0,
+                    'earned': round(blocks_per_addr.get(addr, 0) * 9.604, 4),
+                }
+            if w['rig'] and w['rig'] not in addr_miners[addr]['rigs']:
+                addr_miners[addr]['rigs'].append(w['rig'])
+            if w['ip'] and w['ip'] not in addr_miners[addr]['ips']:
+                addr_miners[addr]['ips'].append(w['ip'])
+            addr_miners[addr]['shares'] += w['shares']
+            if w['active']: addr_miners[addr]['active'] = True
+
+        # Balances
+        for addr in unique_addrs:
+            try:
+                r = subprocess.run([CLI]+CLI_ARGS+['getaddressbalance', '{"addresses":["'+addr+'"]}'], capture_output=True, text=True, timeout=10)
+                d = json.loads(r.stdout.strip()) if r.returncode == 0 else {}
+                total = round(d.get('balance', 0) / 1e8, 8)
+                r2 = subprocess.run([CLI]+CLI_ARGS+['getaddressutxos', '{"addresses":["'+addr+'"]}'], capture_output=True, text=True, timeout=10)
+                utxos = json.loads(r2.stdout.strip()) if r2.returncode == 0 else []
+                immature = round(sum(u.get('satoshis',0)/1e8 for u in utxos if tip - u.get('height',0) + 1 < 100), 8)
+                addr_miners[addr]['balance'] = total
+                addr_miners[addr]['spendable'] = round(total - immature, 8)
+                addr_miners[addr]['immature'] = immature
+            except: pass
+
+        miner_list = sorted(addr_miners.values(), key=lambda x: x['blocks_found'], reverse=True)
+
+        # Network info
+        mi_r = subprocess.run([CLI]+CLI_ARGS+['getmininginfo'], capture_output=True, text=True, timeout=10)
+        network_hashrate = 0
+        if mi_r.returncode == 0:
+            mi = json.loads(mi_r.stdout.strip())
+            network_hashrate = mi.get('networkhashps', 0)
 
         return jsonify({
             "miners": miner_list,
-            "total_workers": len(miner_list),
-            "unique_addresses": unique_addrs,
-            "unique_ips": unique_ips,
+            "total_workers": len(workers),
+            "unique_addresses": len(miner_list),
+            "unique_ips": len(set(ip for m in miner_list for ip in m['ips'] if ip)),
+            "network_hashrate": network_hashrate,
+            "total_blocks_found": sum(m['blocks_found'] for m in miner_list),
         })
     except Exception as e:
-        return jsonify({"miners": [], "error": str(e)})
-
+        return jsonify({"miners": [], "error": str(e), "total_workers":0, "unique_addresses":0, "unique_ips":0, "network_hashrate":0, "total_blocks_found":0})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=False)
