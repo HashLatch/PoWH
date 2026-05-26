@@ -46,16 +46,17 @@ def balance(address):
         # Sum all UTXOs for this address (spendable + immature coinbase).
         # getreceivedbyaddress does NOT count immature mining rewards, which
         # gives wrong balances for miner wallets — so we use listunspent.
+        # We list ALL utxos (no address filter to avoid shell-quoting issues
+        # with shell=True) and filter by address in Python.
         import json as j
-        # cli() uses shell=True; single-quote the JSON array so the shell
-        # passes it as one argument to the RPC client.
-        raw, err = cli("listunspent 0 9999999 '[\"" + address + "\"]' true")
+        raw, err = cli("listunspent 0 9999999")
         if err:
             return jsonify({"error": err}), 500
         try:
-            utxos = j.loads(raw)
+            utxos = j.loads(raw) if isinstance(raw, str) else raw
         except Exception:
             return jsonify({"balance": 0, "spendable": 0, "immature": 0})
+        utxos = [u for u in utxos if u.get('address') == address]
         spendable = sum(u['amount'] for u in utxos if u.get('confirmations', 0) >= 100)
         immature = sum(u['amount'] for u in utxos if u.get('confirmations', 0) < 100)
         total = spendable + immature
