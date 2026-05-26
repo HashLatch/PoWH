@@ -110,29 +110,38 @@ def tx(txid):
 
 @app.route('/api/address/<address>')
 def address(address):
-    # Get received
-    received, _ = rpc(["getreceivedbyaddress", address, "0"])
-    # Get unspent
-    utxos, _ = rpc(["listunspent", "0", "9999999", json.dumps([address])])
-    balance = sum(u.get("amount", 0) for u in (utxos or []))
-    # Get transactions
-    txs_raw, _ = rpc(["listtransactions", "*", "100", "0", "true"])
+    bal_data, _ = rpc(["getaddressbalance", '{"addresses":["' + address + '"]}'])
+    utxo_data, _ = rpc(["getaddressutxos", '{"addresses":["' + address + '"]}'])
+    tip_str, _ = rpc_str(["getblockcount"])
+    tip = int(tip_str) if tip_str else 0
+    total = round((bal_data or {}).get("balance", 0) / 1e8, 8)
+    received = round((bal_data or {}).get("received", 0) / 1e8, 8)
+    immature = 0
+    if utxo_data:
+        for u in utxo_data:
+            confs = tip - u.get("height", 0) + 1
+            if confs < 100:
+                immature += u.get("satoshis", 0) / 1e8
+    immature = round(immature, 8)
+    spendable = round(total - immature, 8)
+    txids_data, _ = rpc(["getaddresstxids", '{"addresses":["' + address + '"]}'])
     addr_txs = []
-    if txs_raw:
-        for t in txs_raw:
-            if t.get("address") == address:
+    if txids_data:
+        for txid in reversed(txids_data[-50:]):
+            tx_data, _ = rpc(["getrawtransaction", txid, "1"])
+            if tx_data:
                 addr_txs.append({
-                    "txid": t.get("txid"),
-                    "amount": t.get("amount"),
-                    "type": t.get("category"),
-                    "time": t.get("time"),
-                    "confirmations": t.get("confirmations"),
+                    "txid": txid,
+                    "time": tx_data.get("time", 0),
+                    "confirmations": tx_data.get("confirmations", 0),
                 })
     return jsonify({
         "address": address,
-        "balance": balance,
-        "received": received or 0,
-        "transactions": addr_txs[:50],
+        "balance": total,
+        "spendable": spendable,
+        "immature": immature,
+        "received": received,
+        "transactions": addr_txs,
     })
 
 @app.route('/api/richlist')
@@ -142,25 +151,28 @@ def richlist():
         # Use listunspent (the UTXO set) — the actual unspent coins per address.
         # listtransactions double-counted coinbase and mishandled spends,
         # producing inflated balances.
-        utxos, _ = rpc(["listunspent", "0", "9999999"])
-        if not utxos:
-            return jsonify({"addresses": [], "total": 0, "supply": 0})
-
+        tip_str, _ = rpc_str(["getblockcount"])
+        tip = int(tip_str) if tip_str else 0
         balances = {}
-        for u in utxos:
-            addr = u.get("address", "")
-            if not addr:
-                continue
-            balances[addr] = balances.get(addr, 0) + u.get("amount", 0)
-
-        result = [{"address": a, "balance": round(b, 8)} for a, b in balances.items() if b > 0]
+        for h in range(0, tip + 1):
+            bh, _ = rpc_str(["getblockhash", str(h)])
+            if not bh: continue
+            bl, _ = rpc(["getblock", bh, "2"])
+            if not bl: continue
+            for vout in bl["tx"][0].get("vout", []):
+                for addr in vout.get("scriptPubKey", {}).get("addresses", []):
+                    if addr not in balances:
+                        bd, _ = rpc(["getaddressbalance", '{"addresses":["' + addr + '"]}'])
+                        if bd:
+                            balances[addr] = round(bd.get("balance", 0) / 1e8, 8)
+        if not balances:
+            return jsonify({"addresses": [], "total": 0, "supply": 0})
+        result = [{"address": a, "balance": b} for a, b in balances.items() if b > 0]
         result.sort(key=lambda x: x["balance"], reverse=True)
         top100 = result[:100]
-
         total_supply = sum(x["balance"] for x in result)
         for b in top100:
             b["percent"] = round(b["balance"] / total_supply * 100, 4) if total_supply > 0 else 0
-
         return jsonify({"addresses": top100, "total": len(top100), "supply": round(total_supply, 8)})
     except Exception as e:
         return jsonify({"error": str(e), "addresses": [], "total": 0, "supply": 0})
