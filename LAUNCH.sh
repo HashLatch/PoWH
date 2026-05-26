@@ -1,11 +1,24 @@
 #!/bin/bash
 # HashLatch — FULL NETWORK LAUNCH
 # Resetuje siec do zera, importuje portfele, uruchamia wszystkie serwisy + watchdog.
-# Uzyj TYLKO przy starcie nowej sieci (kasuje blockchain).
+# UWAGA: KASUJE BLOCKCHAIN. Uzyj TYLKO przy starcie nowej sieci.
 set -e
 HOME_DIR="/home/dstrychalski"
 CLI="$HOME_DIR/PoWH/src/hashlatch-cli -rpcuser=hashlatch -rpcpassword=test123 -rpcport=8766"
 DAEMON="$HOME_DIR/PoWH/src/hashlatchd"
+
+# Safety confirmation — prevents accidental network wipe after launch
+if [ "$1" != "--confirm" ]; then
+    echo "############################################################"
+    echo "#  UWAGA: To skasuje CALY blockchain i zresetuje siec!     #"
+    echo "#  Wszystkie wykopane bloki i salda zostana usuniete.      #"
+    echo "#                                                          #"
+    echo "#  Uzyj tylko PRZED ogloszeniem, nigdy po starcie sieci.   #"
+    echo "#                                                          #"
+    echo "#  Aby potwierdzic: bash LAUNCH.sh --confirm               #"
+    echo "############################################################"
+    exit 1
+fi
 
 echo "=== 1/7 Zatrzymywanie wszystkiego ==="
 sudo systemctl stop hashlatch-stratum hashlatch hashlatch-watchdog.timer 2>/dev/null || true
@@ -47,11 +60,11 @@ open('$HOME_DIR/.hlc_wallets.json','w').write(json.dumps(w,indent=2))
 print('Portfele zapisane')
 "
 
-echo "=== 6/7 Start serwisow (stratum, api, admin, explorer, tunnel) ==="
+echo "=== 6/7 Start serwisow ==="
 sudo systemctl start hashlatch-stratum
 sleep 5
 
-echo "=== 7/7 Wlaczenie watchdog (auto-restart) ==="
+echo "=== 7/7 Wlaczenie watchdog ==="
 sudo systemctl start hashlatch-watchdog.timer
 
 echo ""
