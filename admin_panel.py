@@ -387,6 +387,7 @@ def get_miners():
         for key, info in workers.items():
             info["shares"] = share_counts.get(key, info["shares"])
             info["active"] = info["last_line"] > total_lines * 0.85
+            info["live_now"] = info["last_line"] > total_lines - 200
 
         # Blockchain scan with cache
         tip_r = subprocess.run([CLI]+CLI_ARGS+['getblockcount'], capture_output=True, text=True, timeout=10)
@@ -429,6 +430,7 @@ def get_miners():
                 addr_miners[addr]['ips'].append(w['ip'])
             addr_miners[addr]['shares'] += w['shares']
             if w['active']: addr_miners[addr]['active'] = True
+            if w.get('live_now'): addr_miners[addr]['live_now'] = True
 
         # Balances
         for addr in unique_addrs:
@@ -451,8 +453,10 @@ def get_miners():
                     'address': addr, 'rigs': [], 'ips': [],
                     'shares': 0, 'active': False,
                     'blocks_found': blk_count,
+                    'live_now': False,
                     'balance': 0, 'spendable': 0, 'immature': 0,
                     'earned': round(blk_count * 9.604, 4),
+                    'live_now': False,
                 }
                 unique_addrs.append(addr)
 
@@ -491,6 +495,54 @@ def get_miners():
         })
     except Exception as e:
         return jsonify({"miners": [], "error": str(e), "total_workers":0, "unique_addresses":0, "unique_ips":0, "network_hashrate":0, "total_blocks_found":0})
+
+@app.route('/api/admin/network')
+def network_stats():
+    """Network-wide stats: wallet count, supply, block distribution"""
+    try:
+        tip_r = subprocess.run([CLI]+CLI_ARGS+['getblockcount'], capture_output=True, text=True, timeout=10)
+        tip = int(tip_r.stdout.strip()) if tip_r.returncode == 0 else 0
+        
+        mi_r = subprocess.run([CLI]+CLI_ARGS+['getmininginfo'], capture_output=True, text=True, timeout=10)
+        network_hashrate = 0
+        if mi_r.returncode == 0:
+            mi = json.loads(mi_r.stdout.strip())
+            network_hashrate = mi.get('networkhashps', 0)
+
+        # Collect unique wallet addresses from coinbase outputs
+        wallets = set()
+        blocks_per_addr = {}
+        # scan last 50 blocks for recent activity, full scan for totals
+        for h in range(0, tip + 1):
+            bh_r = subprocess.run([CLI]+CLI_ARGS+['getblockhash', str(h)], capture_output=True, text=True, timeout=5)
+            if bh_r.returncode != 0: continue
+            bl_r = subprocess.run([CLI]+CLI_ARGS+['getblock', bh_r.stdout.strip(), '2'], capture_output=True, text=True, timeout=15)
+            if bl_r.returncode != 0: continue
+            try:
+                bl = json.loads(bl_r.stdout.strip())
+                for vout in bl['tx'][0].get('vout', []):
+                    for a in vout.get('scriptPubKey', {}).get('addresses', []):
+                        if a != 'ce6KYfjYGUH5dzxXiBLfGEVArWgLRaLF3V':
+                            wallets.add(a)
+                            blocks_per_addr[a] = blocks_per_addr.get(a, 0) + 1
+            except: pass
+
+        supply_r = subprocess.run([CLI]+CLI_ARGS+['getblockchaininfo'], capture_output=True, text=True, timeout=10)
+        supply = 0
+        if supply_r.returncode == 0:
+            ci = json.loads(supply_r.stdout.strip())
+            supply = ci.get('blocks', 0) * 9.8  # approx
+
+        return jsonify({
+            'total_wallets': len(wallets),
+            'total_blocks': tip,
+            'network_hashrate': network_hashrate,
+            'supply_approx': round(supply, 2),
+            'blocks_per_addr': blocks_per_addr,
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=False)
