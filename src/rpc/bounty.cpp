@@ -473,10 +473,11 @@ static UniValue solvebounty(const JSONRPCRequest& request)
     txin.nSequence = CTxIn::SEQUENCE_FINAL;
     mtx.vin.push_back(txin);
 
-    // Subtract a small fee from the reward for the miners
-    CAmount fee = 1000; // 0.00001 HLC flat fee
+    // Subtract a fee from the reward for the miners.
+    // Min relay fee is 0.01 HLC/kB; this tx is small so 0.01 HLC is ample.
+    CAmount fee = 1000000; // 0.01 HLC
     if (reward <= fee)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Bounty amount too small to cover fee");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Bounty amount too small to cover fee (min 0.01 HLC)");
     CAmount payoutAmount = reward - fee;
 
     CTxOut txout(payoutAmount, GetScriptForDestination(dest));
