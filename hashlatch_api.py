@@ -79,21 +79,13 @@ def getnewaddress():
 
 @app.route('/api/getseedphrase')
 def getseedphrase():
-    addr, err = cli("getnewaddress")
-    if err: return jsonify({"error": err}), 500
-    from mnemonic import Mnemonic
-    import datetime, json as j
-    mnemo = Mnemonic("english")
-    seed_phrase = mnemo.generate(128)
-    # Save seed+address to wallets file so recovery works
-    try:
-        try:
-            with open(WALLETS_FILE, 'r') as f: wallets = j.load(f)
-        except: wallets = []
-        wallets.append({"address": addr, "seed": seed_phrase, "created": datetime.datetime.now().isoformat()})
-        with open(WALLETS_FILE, 'w') as f: j.dump(wallets, f, indent=2)
-    except: pass
-    return jsonify({"address": addr, "seed_phrase": seed_phrase})
+    # NON-CUSTODIAL: the server must NEVER generate or store user seeds.
+    # Wallet creation now happens entirely in the browser. This endpoint is
+    # disabled so no private keys ever touch the server.
+    return jsonify({
+        "error": "Server-side wallet generation is disabled. Wallets are created securely in your browser.",
+        "non_custodial": True
+    }), 410
 
 @app.route('/api/bounties')
 def bounties():
