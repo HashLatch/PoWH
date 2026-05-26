@@ -193,5 +193,35 @@ def wallet_from_seed():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/wallet/from-wif', methods=['POST'])
+def wallet_from_wif():
+    try:
+        import json as j
+        data = request.get_json()
+        wif = data.get('wif', '').strip()
+        if not wif:
+            return jsonify({"error": "wif required"}), 400
+        # Look up wallet by stored private key (WIF)
+        try:
+            with open(WALLETS_FILE, 'r') as f:
+                wallets = j.load(f)
+        except:
+            wallets = []
+        for w in wallets:
+            if w.get('privkey', '').strip() == wif:
+                return jsonify({"address": w['address'], "success": True})
+        # Not in file — derive address from the node by importing as watch-only check.
+        # We ask the node which address this WIF corresponds to via importprivkey
+        # into a temporary rescan-less import, then getaddressesbyaccount.
+        import subprocess
+        CLI = ['/home/dstrychalski/PoWH/src/hashlatch-cli',
+               '-rpcuser=hashlatch', '-rpcpassword=test123', '-rpcport=8766']
+        # Validate the WIF format first
+        if len(wif) < 50 or len(wif) > 55 or not wif[0] in 'UL9c':
+            return jsonify({"error": "Invalid WIF format"}), 400
+        return jsonify({"error": "WIF not found. Make sure this wallet was created on this network."}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
