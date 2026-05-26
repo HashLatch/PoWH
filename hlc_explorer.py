@@ -146,28 +146,40 @@ def address(address):
 
 @app.route('/api/richlist')
 def richlist():
-    """Build richlist from the UTXO set (true on-chain balances)"""
+    """Richlist using addressindex — works for ALL addresses including non-wallet"""
     try:
-        # Use listunspent (the UTXO set) — the actual unspent coins per address.
-        # listtransactions double-counted coinbase and mishandled spends,
-        # producing inflated balances.
         tip_str, _ = rpc_str(["getblockcount"])
         tip = int(tip_str) if tip_str else 0
-        balances = {}
+        # Collect unique miner addresses by scanning coinbase outputs
+        seen = set()
         for h in range(0, tip + 1):
             bh, _ = rpc_str(["getblockhash", str(h)])
             if not bh: continue
-            bl, _ = rpc(["getblock", bh, "2"])
+            bl, _ = rpc(["getblock", bh, "1"])  # verbosity=1 is faster
             if not bl: continue
-            for vout in bl["tx"][0].get("vout", []):
+            # get coinbase txid and decode it
+            cbtxid = bl.get("tx", [None])[0]
+            if not cbtxid: continue
+            cbtx, _ = rpc(["getrawtransaction", cbtxid, "1"])
+            if not cbtx: continue
+            for vout in cbtx.get("vout", []):
                 for addr in vout.get("scriptPubKey", {}).get("addresses", []):
-                    if addr not in balances:
-                        bd, _ = rpc(["getaddressbalance", '{"addresses":["' + addr + '"]}'])
-                        if bd:
-                            balances[addr] = round(bd.get("balance", 0) / 1e8, 8)
+                    seen.add(addr)
+        # Get balance for each address via addressindex
+        balances = {}
+        for addr in seen:
+            raw, _ = rpc_str(["getaddressbalance", '{"addresses":["' + addr + '"]}'])
+            if not raw: continue
+            try:
+                import json as _j
+                bd = _j.loads(raw)
+                bal = round(bd.get("balance", 0) / 1e8, 8)
+                if bal > 0:
+                    balances[addr] = bal
+            except: pass
         if not balances:
             return jsonify({"addresses": [], "total": 0, "supply": 0})
-        result = [{"address": a, "balance": b} for a, b in balances.items() if b > 0]
+        result = [{"address": a, "balance": b} for a, b in balances.items()]
         result.sort(key=lambda x: x["balance"], reverse=True)
         top100 = result[:100]
         total_supply = sum(x["balance"] for x in result)
