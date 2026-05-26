@@ -43,27 +43,37 @@ def balance(address):
     if not address:
         address = request.args.get("address")
     if address:
-        # Sum all UTXOs for this address (spendable + immature coinbase).
-        # getreceivedbyaddress does NOT count immature mining rewards, which
-        # gives wrong balances for miner wallets — so we use listunspent.
-        # We list ALL utxos (no address filter to avoid shell-quoting issues
-        # with shell=True) and filter by address in Python.
-        import json as j
-        raw, err = cli("listunspent 0 9999999")
+        import json as j, shlex
+        # Use addressindex RPC — works for ANY address, not just wallet addresses
+        raw, err = cli("getaddressbalance '{\"addresses\":[\"" + address + "\"]}'")
         if err:
             return jsonify({"error": err}), 500
         try:
-            utxos = j.loads(raw) if isinstance(raw, str) else raw
+            data = j.loads(raw) if isinstance(raw, str) else raw
         except Exception:
             return jsonify({"balance": 0, "spendable": 0, "immature": 0})
-        utxos = [u for u in utxos if u.get('address') == address]
-        spendable = sum(u['amount'] for u in utxos if u.get('confirmations', 0) >= 100)
-        immature = sum(u['amount'] for u in utxos if u.get('confirmations', 0) < 100)
-        total = spendable + immature
+        # getaddressbalance returns satoshis
+        total = round(data.get("balance", 0) / 1e8, 8)
+        # Check immature UTXOs via getaddressutxos
+        raw2, err2 = cli("getaddressutxos '{\"addresses\":[\"" + address + "\"]}'")
+        immature = 0
+        spendable = total
+        if not err2:
+            try:
+                utxos = j.loads(raw2) if isinstance(raw2, str) else raw2
+                raw3, _ = cli("getblockcount")
+                tip = int(raw3) if raw3 else 0
+                for u in utxos:
+                    confs = tip - u.get("height", 0) + 1
+                    if confs < 100:
+                        immature += round(u.get("satoshis", 0) / 1e8, 8)
+                spendable = round(total - immature, 8)
+            except Exception:
+                pass
         return jsonify({
-            "balance": round(total, 8),
-            "spendable": round(spendable, 8),
-            "immature": round(immature, 8),
+            "balance": total,
+            "spendable": spendable,
+            "immature": immature,
         })
     else:
         data, err = cli("getbalance")
