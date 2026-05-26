@@ -74,7 +74,7 @@ def start_node():
     subprocess.Popen([
         f"{NODE_DIR}/src/hashlatchd", "-daemon", "-server",
         "-rpcuser=hashlatch", "-rpcpassword=test123", "-rpcport=8766",
-        "-rpcallowip=127.0.0.1", "-txindex=1", "-bypassdownload=1",
+        "-rpcallowip=127.0.0.1", "-txindex=1", "-addressindex=1", "-bypassdownload=1",
         "-listen=1", "-port=18767", "-rpcworkqueue=64", "-rpcthreads=4"
     ])
     return "Node starting..."
@@ -284,24 +284,23 @@ def get_balance(address):
         # Use the UTXO set (listunspent) for the true balance. listtransactions
         # double-counts historical coinbase and ignores spends, which inflated
         # the figure. UTXOs are the actual unspent coins on chain.
-        r = subprocess.run([CLI] + CLI_ARGS + ['listunspent', '0', '9999999'],
+        r = subprocess.run([CLI] + CLI_ARGS + ['getaddressbalance',
+            '{"addresses":["' + address + '"]}'],
             capture_output=True, text=True, timeout=15)
-        utxos = json.loads(r.stdout.strip()) if r.returncode == 0 else []
-
-        spendable = 0
-        immature = 0
-        for u in utxos:
-            if u.get('address') != address:
-                continue
-            amt = u.get('amount', 0)
-            if u.get('confirmations', 0) >= 100:
-                spendable += amt
-            else:
-                immature += amt
-
+        data = json.loads(r.stdout.strip()) if r.returncode == 0 else {}
+        r2 = subprocess.run([CLI] + CLI_ARGS + ['getaddressutxos',
+            '{"addresses":["' + address + '"]}'],
+            capture_output=True, text=True, timeout=15)
+        utxos = json.loads(r2.stdout.strip()) if r2.returncode == 0 else []
+        r3 = subprocess.run([CLI] + CLI_ARGS + ['getblockcount'],
+            capture_output=True, text=True, timeout=15)
+        tip = int(r3.stdout.strip()) if r3.returncode == 0 else 0
+        total = round(data.get('balance', 0) / 1e8, 8)
+        immature = round(sum(u.get('satoshis',0)/1e8 for u in utxos if tip - u.get('height',0) + 1 < 100), 8)
         return jsonify({"address": address,
-                        "balance": round(spendable, 8),
-                        "immature": round(immature, 8)})
+                        "balance": round(total - immature, 8),
+                        "immature": immature,
+                        "total": total})
     except Exception as e:
         return jsonify({"error": str(e), "balance": 0, "immature": 0})
 
