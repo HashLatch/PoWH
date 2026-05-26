@@ -347,5 +347,72 @@ def rpc_command():
     result = cli(cmd)
     return jsonify({"result": result})
 
+@app.route('/api/admin/miners')
+def get_miners():
+    """Live miner monitoring: parses the stratum log for authorized workers,
+    their payout address, IP, share counts and last-seen time."""
+    try:
+        import re, collections
+        log_path = "/home/dstrychalski/stratum.log"
+        if not os.path.exists(log_path):
+            return jsonify({"miners": [], "total": 0, "active": 0})
+
+        # Read the tail of the (possibly binary) log safely as latin-1.
+        with open(log_path, "rb") as f:
+            try:
+                f.seek(-3_000_000, 2)  # last ~3MB is plenty
+            except OSError:
+                f.seek(0)
+            data = f.read().decode("latin-1", errors="ignore")
+
+        # Worker line looks like: ..."params":["<address>.<rig>", ... "ip":"::ffff:1.2.3.4"
+        miners = collections.OrderedDict()
+
+        # Track authorizations (address + ip)
+        auth_re = re.compile(r'mining\.authorize"[^}]*?"params":\["([a-zA-Z0-9]+)\.([^"]*)"')
+        ip_re = re.compile(r'"ip":"([^"]+)"')
+        # Submitted shares per worker
+        submit_re = re.compile(r'mining\.submit"[^}]*?"params":\["([a-zA-Z0-9]+)\.([^"]*)"')
+
+        # Build per-line scan to associate ip near a worker mention
+        for line in data.splitlines():
+            m = auth_re.search(line) or submit_re.search(line)
+            if not m:
+                continue
+            addr, rig = m.group(1), m.group(2)
+            key = f"{addr}.{rig}"
+            ipm = ip_re.search(line)
+            ip = ipm.group(1).replace("::ffff:", "") if ipm else None
+            if key not in miners:
+                miners[key] = {"address": addr, "rig": rig, "ip": ip, "shares": 0}
+            if ip:
+                miners[key]["ip"] = ip
+            if "mining.submit" in line:
+                miners[key]["shares"] += 1
+
+        # Count shares per address from full data (more reliable)
+        share_counts = collections.Counter()
+        for m in submit_re.finditer(data):
+            share_counts[f"{m.group(1)}.{m.group(2)}"] += 1
+        for key, info in miners.items():
+            info["shares"] = share_counts.get(key, info.get("shares", 0))
+
+        miner_list = list(miners.values())
+        miner_list.sort(key=lambda x: x["shares"], reverse=True)
+
+        # Unique addresses and IPs as a quick summary
+        unique_addrs = len(set(m["address"] for m in miner_list))
+        unique_ips = len(set(m["ip"] for m in miner_list if m.get("ip")))
+
+        return jsonify({
+            "miners": miner_list,
+            "total_workers": len(miner_list),
+            "unique_addresses": unique_addrs,
+            "unique_ips": unique_ips,
+        })
+    except Exception as e:
+        return jsonify({"miners": [], "error": str(e)})
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=False)
