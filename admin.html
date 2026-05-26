@@ -175,38 +175,49 @@ tr:hover td{background:rgba(255,255,255,0.02)}
 
     <!-- MINING TAB -->
     <div id="tab-mining" style="display:none">
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div class="card-title" style="margin:0">⛏ Live Miners</div>
-          <button class="btn btn-ghost btn-sm" onclick="loadMiners()">↻ Refresh</button>
-        </div>
-        <div id="minersSummary" style="display:flex;gap:20px;margin:12px 0;font-size:12px">
-          <div>Workers: <span id="mWorkers" style="color:var(--primary);font-weight:bold">—</span></div>
-          <div>Unique addresses: <span id="mAddrs" style="color:var(--green);font-weight:bold">—</span></div>
-          <div>Unique IPs: <span id="mIps" style="color:var(--primary);font-weight:bold">—</span></div>
-        </div>
-        <div id="minersTable" style="font-size:11px;color:var(--muted)">Loading…</div>
+      <!-- Summary cards -->
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="stat-box"><div class="val" id="mNetHash">—</div><div class="lbl">Network Hashrate</div></div>
+        <div class="stat-box"><div class="val" id="mTotalMiners">—</div><div class="lbl">Unique Miners</div></div>
+        <div class="stat-box"><div class="val" id="mTotalBlocks">—</div><div class="lbl">Blocks Found</div></div>
+        <div class="stat-box"><div class="val" id="mTotalWorkers">—</div><div class="lbl">Worker Rigs</div></div>
       </div>
+
+      <!-- Miner cards table -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card-title" style="margin:0">⛏ Miner Dashboard</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="color:var(--muted);font-size:11px;display:flex;align-items:center;gap:4px">
+              <input type="checkbox" id="autoRefreshMining" onchange="toggleMinerRefresh(this.checked)"> Auto-refresh 15s
+            </label>
+            <button class="btn btn-ghost btn-sm" onclick="loadMiners()">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="minersContainer">
+          <div style="color:var(--muted);text-align:center;padding:30px">Loading miners…</div>
+        </div>
+      </div>
+
+      <!-- Config card -->
       <div class="card">
         <div class="card-title">Mining Configuration</div>
         <table>
           <tr><th>Parameter</th><th>Value</th></tr>
           <tr><td>Algorithm</td><td style="color:var(--primary)">KawPow</td></tr>
-          <tr><td>Stratum</td><td>stratum+tcp://34.185.173.154:3052</td></tr>
-          <tr><td>Pool Address (98%)</td><td id="miningAddr" style="color:var(--primary)">—</td></tr>
-          <tr><td>Dev Fee Address (2%)</td><td style="color:var(--muted)">ce6KYfjYGUH5dzxXiBLfGEVArWgLRaLF3V</td></tr>
-          <tr><td>Block Reward</td><td style="color:var(--green)">10 HLC</td></tr>
+          <tr><td>Stratum URL</td><td><code>stratum+tcp://34.185.173.154:3052</code></td></tr>
+          <tr><td>Worker format</td><td><code>YOUR_ADDRESS.rigname</code></td></tr>
+          <tr><td>Block Reward</td><td style="color:var(--green)">10 HLC (9.804 miner + 0.196 dev)</td></tr>
           <tr><td>Block Time</td><td>~2 minutes</td></tr>
           <tr><td>Halving</td><td>Every 1,050,000 blocks (~4 years)</td></tr>
           <tr><td>Max Supply</td><td>21,000,000 HLC</td></tr>
         </table>
-      </div>
-      <div class="card">
-        <div class="card-title">Quick Mine Commands</div>
-        <div style="color:var(--muted);font-size:11px;margin-bottom:8px">Windows (.bat) — Run as Administrator:</div>
-        <div style="background:#04040c;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;color:#aaffaa;font-family:monospace">t-rex.exe -a kawpow -o stratum+tcp://34.185.173.154:3052 -u YOUR_ADDRESS.rig1 -p x</div>
-        <div style="color:var(--muted);font-size:11px;margin:10px 0 8px">Linux:</div>
-        <div style="background:#04040c;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;color:#aaffaa;font-family:monospace">./t-rex -a kawpow -o stratum+tcp://34.185.173.154:3052 -u YOUR_ADDRESS.rig1 -p x</div>
+        <div style="margin-top:12px">
+          <div style="color:var(--muted);font-size:11px;margin-bottom:6px">T-Rex Miner command:</div>
+          <div style="background:#04040c;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;color:#aaffaa;font-family:monospace">
+            t-rex -a kawpow -o stratum+tcp://34.185.173.154:3052 -u YOUR_ADDRESS.rig1 -p x
+          </div>
+        </div>
       </div>
     </div>
 
@@ -391,23 +402,88 @@ function showTab(name,el){
   if(name==='mining') loadMiners();
 }
 
+let _minerRefreshInterval=null;
+function toggleMinerRefresh(on){
+  if(_minerRefreshInterval){clearInterval(_minerRefreshInterval);_minerRefreshInterval=null;}
+  if(on) _minerRefreshInterval=setInterval(loadMiners,15000);
+}
+function fmtHash(h){
+  if(h>=1e12) return (h/1e12).toFixed(2)+' TH/s';
+  if(h>=1e9) return (h/1e9).toFixed(2)+' GH/s';
+  if(h>=1e6) return (h/1e6).toFixed(2)+' MH/s';
+  if(h>=1e3) return (h/1e3).toFixed(2)+' KH/s';
+  return h.toFixed(0)+' H/s';
+}
 async function loadMiners(){
-  const el=document.getElementById('minersTable');
+  const el=document.getElementById('minersContainer');
+  el.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px">Loading…</div>';
   try{
     const r=await fetch(`${API}/api/admin/miners`);
     const d=await r.json();
-    document.getElementById('mWorkers').textContent=d.total_workers??0;
-    document.getElementById('mAddrs').textContent=d.unique_addresses??0;
-    document.getElementById('mIps').textContent=d.unique_ips??0;
-    if(!d.miners||d.miners.length===0){el.innerHTML='No miners connected yet.';return;}
-    let h='<table><tr><th>Address</th><th>Rig</th><th>IP</th><th>Shares</th></tr>';
+    if(d.error){el.innerHTML=`<div class="alert alert-err">Error: ${d.error}</div>`;return;}
+    // Update summary cards
+    document.getElementById('mNetHash').textContent=fmtHash(d.network_hashrate||0);
+    document.getElementById('mTotalMiners').textContent=d.unique_addresses??0;
+    document.getElementById('mTotalBlocks').textContent=d.total_blocks_found??0;
+    document.getElementById('mTotalWorkers').textContent=d.total_workers??0;
+    if(!d.miners||d.miners.length===0){
+      el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px">No miners seen yet in stratum log.</div>';
+      return;
+    }
+    const totalShares=d.miners.reduce((s,m)=>s+(m.shares||0),0);
+    const totalBlocks=d.total_blocks_found||1;
+    let html=`<div style="overflow-x:auto"><table>
+      <thead><tr>
+        <th>Status</th>
+        <th>Address</th>
+        <th>Rigs</th>
+        <th>IPs</th>
+        <th>Shares</th>
+        <th>Share%</th>
+        <th>Blocks Found</th>
+        <th>Block%</th>
+        <th>Earned (HLC)</th>
+        <th>Balance</th>
+        <th>Spendable</th>
+        <th>Immature</th>
+      </tr></thead><tbody>`;
     d.miners.forEach(m=>{
-      const addr=m.address.length>16?m.address.slice(0,8)+'…'+m.address.slice(-6):m.address;
-      h+=`<tr><td style="color:var(--primary)" title="${m.address}">${addr}</td><td>${m.rig||'-'}</td><td style="color:var(--muted)">${m.ip||'-'}</td><td style="color:var(--green)">${m.shares||0}</td></tr>`;
+      const short=m.address.slice(0,10)+'…'+m.address.slice(-6);
+      const sharePct=totalShares>0?((m.shares||0)/totalShares*100).toFixed(1):0;
+      const blockPct=totalBlocks>0?((m.blocks_found||0)/totalBlocks*100).toFixed(1):0;
+      const statusDot=m.active
+        ?'<span style="color:var(--green);font-size:16px" title="Active">●</span>'
+        :'<span style="color:var(--muted);font-size:16px" title="Inactive">○</span>';
+      const rigs=(m.rigs||[]).join(', ')||'—';
+      const ips=(m.ips||[]).join(', ')||'—';
+      html+=`<tr>
+        <td style="text-align:center">${statusDot}</td>
+        <td>
+          <code style="color:var(--primary);font-size:11px" title="${m.address}">${short}</code>
+          <button class="copy-btn" style="margin-left:4px" onclick="copyText('${m.address}')">copy</button>
+        </td>
+        <td style="color:var(--muted);font-size:11px">${rigs}</td>
+        <td style="color:var(--muted);font-size:11px">${ips}</td>
+        <td style="color:var(--green);font-weight:700">${m.shares||0}</td>
+        <td style="color:var(--muted)">${sharePct}%</td>
+        <td style="color:var(--primary);font-weight:700;font-size:14px">${m.blocks_found||0}</td>
+        <td style="color:var(--muted)">${blockPct}%</td>
+        <td style="color:var(--green)">${(m.earned||0).toFixed(4)}</td>
+        <td style="color:var(--primary);font-weight:700">${(m.balance||0).toFixed(4)}</td>
+        <td style="color:var(--green)">${(m.spendable||0).toFixed(4)}</td>
+        <td style="color:var(--muted)">${(m.immature||0).toFixed(4)}</td>
+      </tr>`;
     });
-    h+='</table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='Error loading miners: '+e;}
+    html+='</tbody></table></div>';
+    // Add legend
+    html+=`<div style="margin-top:10px;font-size:10px;color:var(--muted);display:flex;gap:16px">
+      <span>● Active (recent shares)</span>
+      <span>○ Inactive (no recent shares)</span>
+      <span>Earned = blocks_found × 9.604 HLC</span>
+      <span>Balance = on-chain total</span>
+    </div>`;
+    el.innerHTML=html;
+  }catch(e){el.innerHTML=`<div class="alert alert-err">Error: ${e.message}</div>`;}
 }
 
 function startPolling(){
