@@ -43,11 +43,32 @@ def balance(address):
     if not address:
         address = request.args.get("address")
     if address:
-        data, err = cli(f"getreceivedbyaddress {address} 0")
+        # Sum all UTXOs for this address (spendable + immature coinbase).
+        # getreceivedbyaddress does NOT count immature mining rewards, which
+        # gives wrong balances for miner wallets — so we use listunspent.
+        import json as j
+        # cli() uses shell=True; single-quote the JSON array so the shell
+        # passes it as one argument to the RPC client.
+        raw, err = cli("listunspent 0 9999999 '[\"" + address + "\"]' true")
+        if err:
+            return jsonify({"error": err}), 500
+        try:
+            utxos = j.loads(raw)
+        except Exception:
+            return jsonify({"balance": 0, "spendable": 0, "immature": 0})
+        spendable = sum(u['amount'] for u in utxos if u.get('confirmations', 0) >= 100)
+        immature = sum(u['amount'] for u in utxos if u.get('confirmations', 0) < 100)
+        total = spendable + immature
+        return jsonify({
+            "balance": round(total, 8),
+            "spendable": round(spendable, 8),
+            "immature": round(immature, 8),
+        })
     else:
         data, err = cli("getbalance")
-    if err: return jsonify({"error": err}), 500
-    return jsonify({"balance": data})
+        if err:
+            return jsonify({"error": err}), 500
+        return jsonify({"balance": data})
 
 @app.route('/api/getnewaddress')
 def getnewaddress():
