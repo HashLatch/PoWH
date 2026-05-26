@@ -281,23 +281,27 @@ def get_logs(service):
 @app.route('/api/admin/balance/<address>')
 def get_balance(address):
     try:
-        r = subprocess.run([CLI] + CLI_ARGS + ['listtransactions', '*', '9999', '0', 'true'],
+        # Use the UTXO set (listunspent) for the true balance. listtransactions
+        # double-counts historical coinbase and ignores spends, which inflated
+        # the figure. UTXOs are the actual unspent coins on chain.
+        r = subprocess.run([CLI] + CLI_ARGS + ['listunspent', '0', '9999999'],
             capture_output=True, text=True, timeout=15)
-        txs = json.loads(r.stdout.strip()) if r.returncode == 0 else []
-        
-        balance = 0
+        utxos = json.loads(r.stdout.strip()) if r.returncode == 0 else []
+
+        spendable = 0
         immature = 0
-        for t in txs:
-            if t.get('address') != address:
+        for u in utxos:
+            if u.get('address') != address:
                 continue
-            cat = t.get('category', '')
-            amt = t.get('amount', 0)
-            if cat == 'receive':
-                balance += amt
-            elif cat in ('immature', 'generate'):
+            amt = u.get('amount', 0)
+            if u.get('confirmations', 0) >= 100:
+                spendable += amt
+            else:
                 immature += amt
-        
-        return jsonify({"address": address, "balance": round(balance, 8), "immature": round(immature, 8)})
+
+        return jsonify({"address": address,
+                        "balance": round(spendable, 8),
+                        "immature": round(immature, 8)})
     except Exception as e:
         return jsonify({"error": str(e), "balance": 0, "immature": 0})
 
