@@ -137,33 +137,30 @@ def address(address):
 
 @app.route('/api/richlist')
 def richlist():
-    """Build richlist from transaction history"""
+    """Build richlist from the UTXO set (true on-chain balances)"""
     try:
-        # Get all transactions including coinbase
-        txs, _ = rpc(["listtransactions", "*", "9999", "0", "true"])
-        if not txs:
+        # Use listunspent (the UTXO set) — the actual unspent coins per address.
+        # listtransactions double-counted coinbase and mishandled spends,
+        # producing inflated balances.
+        utxos, _ = rpc(["listunspent", "0", "9999999"])
+        if not utxos:
             return jsonify({"addresses": [], "total": 0, "supply": 0})
-        
+
         balances = {}
-        for t in txs:
-            addr = t.get("address", "")
+        for u in utxos:
+            addr = u.get("address", "")
             if not addr:
                 continue
-            amt = t.get("amount", 0)
-            cat = t.get("category", "")
-            if cat in ("receive", "immature", "generate"):
-                balances[addr] = balances.get(addr, 0) + amt
-            elif cat == "send":
-                balances[addr] = balances.get(addr, 0) - amt
+            balances[addr] = balances.get(addr, 0) + u.get("amount", 0)
 
         result = [{"address": a, "balance": round(b, 8)} for a, b in balances.items() if b > 0]
         result.sort(key=lambda x: x["balance"], reverse=True)
         top100 = result[:100]
-        
+
         total_supply = sum(x["balance"] for x in result)
         for b in top100:
             b["percent"] = round(b["balance"] / total_supply * 100, 4) if total_supply > 0 else 0
-        
+
         return jsonify({"addresses": top100, "total": len(top100), "supply": round(total_supply, 8)})
     except Exception as e:
         return jsonify({"error": str(e), "addresses": [], "total": 0, "supply": 0})
