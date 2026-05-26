@@ -69,6 +69,7 @@ input:focus{border-color:var(--primary)}
 .alert-warn{background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);color:#fb923c}
 .reset-zone{border:1px solid rgba(239,68,68,0.4);border-radius:12px;padding:16px}
 .reset-zone .card-title{color:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 #toast{position:fixed;bottom:24px;right:24px;background:var(--primary);color:#000;border-radius:10px;padding:10px 20px;font-size:12px;font-weight:700;display:none;z-index:999;box-shadow:0 4px 20px rgba(240,180,41,0.4)}
 .section-title{color:var(--muted);font-size:10px;letter-spacing:0.2em;text-transform:uppercase;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 table{width:100%;border-collapse:collapse}
@@ -181,6 +182,12 @@ tr:hover td{background:rgba(255,255,255,0.02)}
         <div class="stat-box"><div class="val" id="mTotalMiners">—</div><div class="lbl">Unique Miners</div></div>
         <div class="stat-box"><div class="val" id="mTotalBlocks">—</div><div class="lbl">Blocks Found</div></div>
         <div class="stat-box"><div class="val" id="mTotalWorkers">—</div><div class="lbl">Worker Rigs</div></div>
+      </div>
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="stat-box" style="border-color:rgba(34,197,94,0.4)"><div class="val" id="mLiveNow" style="color:var(--green)">—</div><div class="lbl">🟢 Mining NOW</div></div>
+        <div class="stat-box"><div class="val" id="mNetWallets">—</div><div class="lbl">Network Wallets</div></div>
+        <div class="stat-box"><div class="val" id="mTotalSupply">—</div><div class="lbl">Circulating HLC</div></div>
+        <div class="stat-box"><div class="val" id="mDevFee">0.196</div><div class="lbl">Dev Fee / Block</div></div>
       </div>
 
       <!-- Miner cards table -->
@@ -418,7 +425,10 @@ async function loadMiners(){
   const el=document.getElementById('minersContainer');
   el.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px">Loading…</div>';
   try{
-    const r=await fetch(`${API}/api/admin/miners`);
+    const [r, rNet] = await Promise.all([
+      fetch(`${API}/api/admin/miners`),
+      fetch(`${API}/api/admin/network`).catch(()=>null)
+    ]);
     const d=await r.json();
     if(d.error){el.innerHTML=`<div class="alert alert-err">Error: ${d.error}</div>`;return;}
     // Update summary cards
@@ -426,6 +436,9 @@ async function loadMiners(){
     document.getElementById('mTotalMiners').textContent=d.unique_addresses??0;
     document.getElementById('mTotalBlocks').textContent=d.total_blocks_found??0;
     document.getElementById('mTotalWorkers').textContent=d.total_workers??0;
+    const liveNow=(d.miners||[]).filter(m=>m.live_now).length;
+    document.getElementById('mLiveNow').textContent=liveNow>0?liveNow+' active':'0';
+    if(rNet){const dn=await rNet.json();document.getElementById('mNetWallets').textContent=dn.total_wallets??'—';document.getElementById('mTotalSupply').textContent=dn.supply_approx?dn.supply_approx.toFixed(0)+' HLC':'—';}
     if(!d.miners||d.miners.length===0){
       el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px">No miners seen yet in stratum log.</div>';
       return;
@@ -451,8 +464,10 @@ async function loadMiners(){
       const short=m.address.slice(0,10)+'…'+m.address.slice(-6);
       const sharePct=totalShares>0?((m.shares||0)/totalShares*100).toFixed(1):0;
       const blockPct=totalBlocks>0?((m.blocks_found||0)/totalBlocks*100).toFixed(1):0;
-      const statusDot=m.active
-        ?'<span style="color:var(--green);font-size:16px" title="Active">●</span>'
+      const statusDot=m.live_now
+        ?'<span style="color:var(--green);font-size:16px;animation:pulse 1s infinite" title="Mining RIGHT NOW">⛏</span>'
+        :m.active
+        ?'<span style="color:var(--primary);font-size:16px" title="Active (recent)">●</span>'
         :'<span style="color:var(--muted);font-size:16px" title="Inactive">○</span>';
       const rigs=(m.rigs||[]).join(', ')||'—';
       const ips=(m.ips||[]).join(', ')||'—';
@@ -476,11 +491,12 @@ async function loadMiners(){
     });
     html+='</tbody></table></div>';
     // Add legend
-    html+=`<div style="margin-top:10px;font-size:10px;color:var(--muted);display:flex;gap:16px">
-      <span>● Active (recent shares)</span>
-      <span>○ Inactive (no recent shares)</span>
-      <span>Earned = blocks_found × 9.604 HLC</span>
-      <span>Balance = on-chain total</span>
+    html+=`<div style="margin-top:10px;font-size:10px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap">
+      <span>⛏ Mining RIGHT NOW</span>
+      <span>● Active (seen recently)</span>
+      <span>○ Inactive</span>
+      <span>Earned = blocks × 9.604 HLC</span>
+      <span>Balance = live on-chain</span>
     </div>`;
     el.innerHTML=html;
   }catch(e){el.innerHTML=`<div class="alert alert-err">Error: ${e.message}</div>`;}
