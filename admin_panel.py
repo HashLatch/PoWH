@@ -444,9 +444,37 @@ def get_miners():
                 addr_miners[addr]['immature'] = immature
             except: pass
 
+        # Add blockchain miners not yet in log (historical)
+        for addr, blk_count in blocks_per_addr.items():
+            if addr not in addr_miners:
+                addr_miners[addr] = {
+                    'address': addr, 'rigs': [], 'ips': [],
+                    'shares': 0, 'active': False,
+                    'blocks_found': blk_count,
+                    'balance': 0, 'spendable': 0, 'immature': 0,
+                    'earned': round(blk_count * 9.604, 4),
+                }
+                unique_addrs.append(addr)
+
+        # Balances for all addresses (including blockchain-only)
+        for addr in unique_addrs:
+            if addr_miners.get(addr, {}).get('balance', 0) != 0:
+                continue
+            try:
+                r = subprocess.run([CLI]+CLI_ARGS+['getaddressbalance', '{"addresses":["'+addr+'"]}'], capture_output=True, text=True, timeout=10)
+                d = json.loads(r.stdout.strip()) if r.returncode == 0 else {}
+                total = round(d.get('balance', 0) / 1e8, 8)
+                r2 = subprocess.run([CLI]+CLI_ARGS+['getaddressutxos', '{"addresses":["'+addr+'"]}'], capture_output=True, text=True, timeout=10)
+                utxos = json.loads(r2.stdout.strip()) if r2.returncode == 0 else []
+                immature = round(sum(u.get('satoshis',0)/1e8 for u in utxos if tip - u.get('height',0) + 1 < 100), 8)
+                if addr in addr_miners:
+                    addr_miners[addr]['balance'] = total
+                    addr_miners[addr]['spendable'] = round(total - immature, 8)
+                    addr_miners[addr]['immature'] = immature
+            except: pass
+
         miner_list = sorted(addr_miners.values(), key=lambda x: x['blocks_found'], reverse=True)
 
-        # Network info
         mi_r = subprocess.run([CLI]+CLI_ARGS+['getmininginfo'], capture_output=True, text=True, timeout=10)
         network_hashrate = 0
         if mi_r.returncode == 0:
