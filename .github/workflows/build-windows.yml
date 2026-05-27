@@ -24,7 +24,7 @@ jobs:
         ./autogen.sh
         CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --host=x86_64-w64-mingw32 --disable-tests --disable-bench --without-gui --without-miniupnpc --disable-zmq CXXFLAGS="-O2"
     - name: Build
-      run: make -j$(nproc) src/hashlatchd.exe src/hashlatch-cli.exe
+      run: make -j$(nproc)
     - name: Package
       run: |
         x86_64-w64-mingw32-strip src/hashlatchd.exe src/hashlatch-cli.exe
