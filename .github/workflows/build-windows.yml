@@ -1,0 +1,36 @@
+name: Build Windows Binaries
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  build-windows:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Install deps
+      run: sudo apt-get install -y build-essential libtool autotools-dev automake pkg-config mingw-w64 g++-mingw-w64-x86-64 curl python3
+    - name: Boost
+      run: |
+        mkdir -p depends/sources
+        wget -q "https://archives.boost.io/release/1.71.0/source/boost_1_71_0.tar.bz2" -O depends/sources/boost_1_71_0.tar.bz2
+    - name: Build depends
+      run: cd depends && make HOST=x86_64-w64-mingw32 -j$(nproc) NO_QT=1
+    - name: Configure
+      run: |
+        ./autogen.sh
+        CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --host=x86_64-w64-mingw32 --disable-tests --disable-bench --without-gui --without-miniupnpc --disable-zmq CXXFLAGS="-O2"
+    - name: Build
+      run: make -j$(nproc) src/hashlatchd.exe src/hashlatch-cli.exe
+    - name: Package
+      run: |
+        x86_64-w64-mingw32-strip src/hashlatchd.exe src/hashlatch-cli.exe
+        zip hashlatch-windows-x64.zip src/hashlatchd.exe src/hashlatch-cli.exe
+    - uses: actions/upload-artifact@v3
+      with:
+        name: hashlatch-windows-x64
+        path: hashlatch-windows-x64.zip
+        retention-days: 30
