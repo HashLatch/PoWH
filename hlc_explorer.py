@@ -144,9 +144,9 @@ def address(address):
         "transactions": addr_txs,
     })
 
-@app.route('/api/richlist')
 _richlist_cache = {"data": None, "tip": -1, "time": 0}
 
+@app.route('/api/richlist')
 def richlist():
     """Richlist with cache — rebuilds only when new block found"""
     import time as _time
