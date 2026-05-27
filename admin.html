@@ -241,14 +241,27 @@ tr:hover td{background:rgba(255,255,255,0.02)}
     <!-- SERVICES TAB -->
     <div id="tab-services" style="display:none">
       <div class="card">
-        <div class="card-title">Service Control</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="card-title" style="margin:0">⚙️ Service Control</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-green btn-sm" onclick="startAll()">▶ Start All</button>
+            <button class="btn btn-red btn-sm" onclick="stopAll()">■ Stop All</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadServices()">↻ Refresh</button>
+          </div>
+        </div>
         <div id="servicesGrid"></div>
       </div>
+
       <div class="card">
-        <div class="card-title">Start All Services</div>
-        <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Start all services at once (node, stratum, API, explorer, tunnel)</p>
-        <button class="btn btn-green" onclick="startAll()">▶ Start All</button>
-        <button class="btn btn-red" style="margin-left:8px" onclick="stopAll()">■ Stop All</button>
+        <div class="card-title">📋 Crontab (Autostart)</div>
+        <div style="color:var(--muted);font-size:11px;margin-bottom:8px">Current crontab — watchdog restarts services if they crash</div>
+        <div id="crontabDisplay" style="background:#04040c;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:10px;color:#aaffaa;font-family:monospace;white-space:pre;overflow-x:auto">Loading...</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="loadCrontab()">↻ Refresh</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 Server Resources</div>
+        <div id="resourcesDisplay">Loading...</div>
       </div>
     </div>
 
