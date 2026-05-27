@@ -24,12 +24,12 @@ jobs:
         ./autogen.sh
         CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --host=x86_64-w64-mingw32 --disable-tests --disable-bench --without-gui --without-miniupnpc --disable-zmq CXXFLAGS="-O2 -Wno-error"
     - name: Build
-      run: make -j$(nproc) -C src hashlatch-cli.exe
+      run: make -j$(nproc) -C src hashlatch-cli.exe hashlatchd.exe
     - name: Package
       run: |
         find . -name "hashlatch-cli.exe" | head -3
         mkdir -p hashlatch-windows
-        find . -name "hashlatch-cli.exe" -exec cp {} hashlatch-windows/ \;
+        find . -name "hashlatch-cli.exe" -o -name "hashlatchd.exe" | xargs -I{} cp {} hashlatch-windows/
         echo "HashLatch CLI - Windows x64" > hashlatch-windows/README.txt
         echo "Usage: hashlatch-cli.exe -rpcconnect=34.185.173.154 -rpcport=8766 -rpcuser=hashlatch -rpcpassword=test123 getblockcount" >> hashlatch-windows/README.txt
         echo "Mining pool: stratum+tcp://34.185.173.154:3052" >> hashlatch-windows/README.txt
