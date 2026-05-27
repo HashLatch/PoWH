@@ -5,6 +5,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "random.h"
+#include <mutex>
+#include <thread>
 
 #include "crypto/sha512.h"
 #include "support/cleanse.h"
@@ -18,7 +20,6 @@
 #include <stdlib.h>
 #include <limits>
 #include <chrono>
-#include <thread>
 
 #ifndef WIN32
 #include <sys/time.h>
@@ -38,7 +39,6 @@
 #include <sys/sysctl.h>
 #endif
 
-#include <mutex>
 
 #if defined(__x86_64__) || defined(__amd64__) || defined(__i386__)
 #include <cpuid.h>
