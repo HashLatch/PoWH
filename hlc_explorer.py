@@ -145,19 +145,31 @@ def address(address):
     })
 
 @app.route('/api/richlist')
+_richlist_cache = {"data": None, "tip": -1, "time": 0}
+
 def richlist():
-    """Richlist using addressindex — works for ALL addresses including non-wallet"""
+    """Richlist with cache — rebuilds only when new block found"""
+    import time as _time
+    global _richlist_cache
     try:
         tip_str, _ = rpc_str(["getblockcount"])
         tip = int(tip_str) if tip_str else 0
-        # Collect unique miner addresses by scanning coinbase outputs
-        seen = set()
-        for h in range(0, tip + 1):
+
+        # Return cache if tip unchanged and cache < 60s old
+        if (_richlist_cache["data"] is not None and
+                _richlist_cache["tip"] == tip and
+                _time.time() - _richlist_cache["time"] < 60):
+            return jsonify(_richlist_cache["data"])
+
+        # Only scan NEW blocks since last cache
+        seen = set(_richlist_cache.get("seen", set()) if _richlist_cache["tip"] >= 0 else set())
+        start = max(0, _richlist_cache["tip"] + 1) if _richlist_cache["tip"] >= 0 else 0
+
+        for h in range(start, tip + 1):
             bh, _ = rpc_str(["getblockhash", str(h)])
             if not bh: continue
-            bl, _ = rpc(["getblock", bh, "1"])  # verbosity=1 is faster
+            bl, _ = rpc(["getblock", bh, "1"])
             if not bl: continue
-            # get coinbase txid and decode it
             cbtxid = bl.get("tx", [None])[0]
             if not cbtxid: continue
             cbtx, _ = rpc(["getrawtransaction", cbtxid, "1"])
@@ -165,7 +177,8 @@ def richlist():
             for vout in cbtx.get("vout", []):
                 for addr in vout.get("scriptPubKey", {}).get("addresses", []):
                     seen.add(addr)
-        # Get balance for each address via addressindex
+
+        # Get balances for all addresses
         balances = {}
         for addr in seen:
             raw, _ = rpc_str(["getaddressbalance", '{"addresses":["' + addr + '"]}'])
@@ -177,15 +190,20 @@ def richlist():
                 if bal > 0:
                     balances[addr] = bal
             except: pass
+
         if not balances:
             return jsonify({"addresses": [], "total": 0, "supply": 0})
+
         result = [{"address": a, "balance": b} for a, b in balances.items()]
         result.sort(key=lambda x: x["balance"], reverse=True)
         top100 = result[:100]
         total_supply = sum(x["balance"] for x in result)
         for b in top100:
             b["percent"] = round(b["balance"] / total_supply * 100, 4) if total_supply > 0 else 0
-        return jsonify({"addresses": top100, "total": len(top100), "supply": round(total_supply, 8)})
+
+        response = {"addresses": top100, "total": len(top100), "supply": round(total_supply, 8)}
+        _richlist_cache = {"data": response, "tip": tip, "time": _time.time(), "seen": seen}
+        return jsonify(response)
     except Exception as e:
         return jsonify({"error": str(e), "addresses": [], "total": 0, "supply": 0})
 
