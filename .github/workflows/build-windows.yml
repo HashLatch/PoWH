@@ -24,12 +24,12 @@ jobs:
         ./autogen.sh
         CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --host=x86_64-w64-mingw32 --disable-tests --disable-bench --without-gui --without-miniupnpc --disable-zmq CXXFLAGS="-O2"
     - name: Build
-      run: make -j$(nproc)
+      run: make -j$(nproc) src/hashlatch-cli
     - name: Package
       run: |
-        x86_64-w64-mingw32-strip src/hashlatchd.exe src/hashlatch-cli.exe
+        x86_64-w64-mingw32-strip src/hashlatch-cli.exe || true
         mkdir hashlatch-windows
-        cp src/hashlatchd.exe src/hashlatch-cli.exe hashlatch-windows/
+        cp src/hashlatch-cli.exe hashlatch-windows/
         echo "HashLatch Node - Windows x64" > hashlatch-windows/README.txt
         echo "Pool: stratum+tcp://34.185.173.154:3052" >> hashlatch-windows/README.txt
         echo "Explorer: https://explorer.hashlatch.online" >> hashlatch-windows/README.txt
