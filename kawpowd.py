@@ -53,7 +53,7 @@ class KawPowHandler(BaseHTTPRequestHandler):
             if result and result.get("result"):
                 r = result["result"]
                 digest = r.get("digest", header_hash)
-                is_block = (r.get("meets_target") == "true" or r.get("result") == "true")
+                is_block = (r.get("meets_target") == "true")
                 if is_block:
                     logging.info("BLOCK CANDIDATE! digest=%s", digest[:16])
 
