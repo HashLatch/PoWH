@@ -346,6 +346,8 @@ def rpc_command():
     result = cli(cmd)
     return jsonify({"result": result})
 
+_miners_cache = {"data": None, "time": 0, "tip": -1}
+
 @app.route('/api/admin/miners')
 def get_miners():
     import re, collections, time as time_mod
@@ -485,14 +487,16 @@ def get_miners():
             mi = json.loads(mi_r.stdout.strip())
             network_hashrate = mi.get('networkhashps', 0)
 
-        return jsonify({
+        result = {
             "miners": miner_list,
             "total_workers": len(workers),
             "unique_addresses": len(miner_list),
             "unique_ips": len(set(ip for m in miner_list for ip in m['ips'] if ip)),
             "network_hashrate": network_hashrate,
             "total_blocks_found": sum(m['blocks_found'] for m in miner_list),
-        })
+        }
+        _miners_cache = {"data": result, "time": time_mod.time(), "tip": current_tip}
+        return jsonify(result)
     except Exception as e:
         return jsonify({"miners": [], "error": str(e), "total_workers":0, "unique_addresses":0, "unique_ips":0, "network_hashrate":0, "total_blocks_found":0})
 
