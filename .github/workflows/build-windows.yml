@@ -8,7 +8,7 @@ jobs:
   build-windows:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
     - name: Install deps
@@ -29,7 +29,7 @@ jobs:
       run: |
         x86_64-w64-mingw32-strip src/hashlatchd.exe src/hashlatch-cli.exe
         zip hashlatch-windows-x64.zip src/hashlatchd.exe src/hashlatch-cli.exe
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: hashlatch-windows-x64
         path: hashlatch-windows-x64.zip
