@@ -12,7 +12,7 @@ jobs:
       with:
         submodules: recursive
     - name: Install deps
-      run: sudo apt-get install -y build-essential libtool autotools-dev automake pkg-config mingw-w64 g++-mingw-w64-x86-64 curl python3
+      run: sudo apt-get update && sudo apt-get install -y build-essential libtool autotools-dev automake pkg-config curl python3 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-x86-64-dev
     - name: Boost
       run: |
         mkdir -p depends/sources
