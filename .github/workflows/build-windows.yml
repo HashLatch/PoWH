@@ -34,3 +34,4 @@ jobs:
         name: hashlatch-windows-x64
         path: hashlatch-windows-x64.zip
         retention-days: 30
+
