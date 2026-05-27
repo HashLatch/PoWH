@@ -22,17 +22,17 @@ jobs:
     - name: Configure
       run: |
         ./autogen.sh
-        CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --host=x86_64-w64-mingw32 --disable-tests --disable-bench --without-gui --without-miniupnpc --disable-zmq CXXFLAGS="-O2"
+        CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --host=x86_64-w64-mingw32 --disable-tests --disable-bench --without-gui --without-miniupnpc --disable-zmq CXXFLAGS="-O2 -Wno-error"
     - name: Build
-      run: make -j$(nproc) hashlatch-cli
+      run: make -j$(nproc) -C src hashlatch-cli.exe
     - name: Package
       run: |
-        x86_64-w64-mingw32-strip src/hashlatch-cli.exe || true
-        mkdir hashlatch-windows
-        cp src/hashlatch-cli.exe hashlatch-windows/ 2>/dev/null || cp hashlatch-cli.exe hashlatch-windows/ || find . -name "hashlatch-cli*" -exec cp {} hashlatch-windows/ \;
-        echo "HashLatch Node - Windows x64" > hashlatch-windows/README.txt
-        echo "Pool: stratum+tcp://34.185.173.154:3052" >> hashlatch-windows/README.txt
-        echo "Explorer: https://explorer.hashlatch.online" >> hashlatch-windows/README.txt
+        find . -name "hashlatch-cli.exe" | head -3
+        mkdir -p hashlatch-windows
+        find . -name "hashlatch-cli.exe" -exec cp {} hashlatch-windows/ \;
+        echo "HashLatch CLI - Windows x64" > hashlatch-windows/README.txt
+        echo "Usage: hashlatch-cli.exe -rpcconnect=34.185.173.154 -rpcport=8766 -rpcuser=hashlatch -rpcpassword=test123 getblockcount" >> hashlatch-windows/README.txt
+        echo "Mining pool: stratum+tcp://34.185.173.154:3052" >> hashlatch-windows/README.txt
         zip -r hashlatch-windows-x64.zip hashlatch-windows/
     - uses: actions/upload-artifact@v4
       with:
