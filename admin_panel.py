@@ -548,5 +548,14 @@ def network_stats():
         return jsonify({'error': str(e)})
 
 
+@app.route('/api/admin/crontab')
+def get_crontab():
+    try:
+        r = subprocess.run(['crontab', '-l'], capture_output=True, text=True)
+        return jsonify({"crontab": r.stdout if r.returncode == 0 else "(empty)"})
+    except Exception as e:
+        return jsonify({"crontab": str(e)})
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=False)
