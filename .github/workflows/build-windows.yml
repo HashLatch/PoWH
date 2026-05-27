@@ -12,25 +12,17 @@ jobs:
       with:
         submodules: recursive
     - name: Install deps
-      run: sudo apt-get install -y build-essential libtool autotools-dev automake pkg-config mingw-w64 g++-mingw-w64-x86-64 curl python3 nsis
+      run: sudo apt-get install -y build-essential libtool autotools-dev automake pkg-config mingw-w64 g++-mingw-w64-x86-64 curl python3
     - name: Boost
       run: |
         mkdir -p depends/sources
         wget -q "https://archives.boost.io/release/1.71.0/source/boost_1_71_0.tar.bz2" -O depends/sources/boost_1_71_0.tar.bz2
     - name: Build depends
-      run: cd depends && make HOST=x86_64-w64-mingw32 -j$(nproc) NO_QT=1 NO_ZMQ=1
+      run: cd depends && make HOST=x86_64-w64-mingw32 -j$(nproc) NO_QT=1
     - name: Configure
       run: |
         ./autogen.sh
-        CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure \
-          --prefix=/ \
-          --host=x86_64-w64-mingw32 \
-          --disable-tests \
-          --disable-bench \
-          --without-gui \
-          --without-miniupnpc \
-          --disable-zmq \
-          CXXFLAGS="-O2"
+        CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --host=x86_64-w64-mingw32 --disable-tests --disable-bench --without-gui --without-miniupnpc --disable-zmq CXXFLAGS="-O2"
     - name: Build
       run: make -j$(nproc) src/hashlatchd.exe src/hashlatch-cli.exe
     - name: Package
@@ -38,25 +30,9 @@ jobs:
         x86_64-w64-mingw32-strip src/hashlatchd.exe src/hashlatch-cli.exe
         mkdir hashlatch-windows
         cp src/hashlatchd.exe src/hashlatch-cli.exe hashlatch-windows/
-        cat > hashlatch-windows/README.txt << 'TXT'
-HashLatch Node - Windows x64
-
-FILES:
-  hashlatchd.exe      - Full node daemon
-  hashlatch-cli.exe   - CLI wallet
-
-QUICK START:
-  hashlatchd.exe -daemon
-  hashlatch-cli.exe getblockcount
-  hashlatch-cli.exe addnode 34.185.173.154:18767 add
-
-MINING:
-  Pool: stratum+tcp://34.185.173.154:3052
-  Worker: YOUR_ADDRESS.rig1
-  Password: x
-
-https://hashlatch.online
-TXT
+        echo "HashLatch Node - Windows x64" > hashlatch-windows/README.txt
+        echo "Pool: stratum+tcp://34.185.173.154:3052" >> hashlatch-windows/README.txt
+        echo "Explorer: https://explorer.hashlatch.online" >> hashlatch-windows/README.txt
         zip -r hashlatch-windows-x64.zip hashlatch-windows/
     - uses: actions/upload-artifact@v4
       with:
