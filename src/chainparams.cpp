@@ -163,8 +163,7 @@ public:
 //        assert(genesis.hashMerkleRoot == uint256S("28ff00a867739a352523808d301f504bc4547699398d70faf2266a8bae5f3516"));
 
         vSeeds.clear();
-        vSeeds.emplace_back("seed.powh.io", false);
-        vSeeds.emplace_back("seed.powh.net", false);
+        vSeeds.emplace_back("seed.hashlatch.online", false);
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,88);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,33);
@@ -301,8 +300,7 @@ public:
         vFixedSeeds.clear();
         vSeeds.clear();
 
-        vSeeds.emplace_back("seed-testnet.powh.io", false);
-        vSeeds.emplace_back("seed-testnet.powh.net", false);
+        vSeeds.emplace_back("seed-testnet.hashlatch.online", false);
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
