@@ -22,7 +22,7 @@ jobs:
     - name: Configure
       run: |
         ./autogen.sh
-        CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --host=x86_64-w64-mingw32 --disable-tests --disable-bench --without-gui --without-miniupnpc --disable-zmq CXXFLAGS="-O2 -Wno-error"
+        CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/ --host=x86_64-w64-mingw32 --disable-tests --disable-bench --without-gui --without-miniupnpc --disable-zmq CXXFLAGS="-O2 -Wno-error -std=c++14 -mthreads"
     - name: Build
       run: make -j$(nproc) -C src hashlatch-cli.exe hashlatchd.exe
     - name: Package
