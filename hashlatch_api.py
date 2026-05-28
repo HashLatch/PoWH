@@ -261,7 +261,7 @@ def wallet_from_wif():
 def get_utxos(address):
     """Return spendable UTXOs for address — read-only, safe to expose."""
     import json as j
-    raw, err = cli("getaddressutxos '{"addresses":["" + address + ""]}'")
+    raw, err = cli("getaddressutxos '{\"addresses\":[\"" + address + "\"]}'")
     if err: return jsonify({"error": err}), 500
     try:
         utxos = j.loads(raw) if isinstance(raw, str) else raw
