@@ -257,5 +257,42 @@ def wallet_from_wif():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/utxos/<address>')
+def get_utxos(address):
+    """Return spendable UTXOs for address — read-only, safe to expose."""
+    import json as j
+    raw, err = cli("getaddressutxos '{"addresses":["" + address + ""]}'")
+    if err: return jsonify({"error": err}), 500
+    try:
+        utxos = j.loads(raw) if isinstance(raw, str) else raw
+        raw_tip, _ = cli("getblockcount")
+        tip = int(raw_tip) if raw_tip else 0
+        result = []
+        for u in (utxos or []):
+            confs = tip - u.get("height", 0) + 1
+            if confs >= 100:  # only mature UTXOs
+                result.append({
+                    "txid": u.get("txid"),
+                    "outputIndex": u.get("outputIndex"),
+                    "satoshis": u.get("satoshis"),
+                    "script": u.get("script"),
+                    "height": u.get("height"),
+                })
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/broadcast', methods=['POST'])
+def broadcast():
+    """Broadcast a pre-signed raw transaction. Server never sees keys."""
+    body = request.get_json()
+    raw_hex = body.get("raw_hex", "").strip()
+    if not raw_hex:
+        return jsonify({"error": "Missing raw_hex"}), 400
+    data, err = cli(f"sendrawtransaction {raw_hex}")
+    if err: return jsonify({"error": err}), 500
+    return jsonify({"txid": data})
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
