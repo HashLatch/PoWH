@@ -216,7 +216,7 @@ def richlist():
                 _time.time() - _richlist_cache["time"] < 60):
             return jsonify(_richlist_cache["data"])
 
-        # Only scan NEW blocks since last cache
+        # Fast scan: only coinbase for real-time richlist
         seen = set(_richlist_cache.get("seen", set()) if _richlist_cache["tip"] >= 0 else set())
         start = max(0, _richlist_cache["tip"] + 1) if _richlist_cache["tip"] >= 0 else 0
 
@@ -225,13 +225,21 @@ def richlist():
             if not bh: continue
             bl, _ = rpc(["getblock", bh, "1"])
             if not bl: continue
-            # Scan ALL transactions in block (not just coinbase)
-            for txid in bl.get("tx", []):
-                tx, _ = rpc(["getrawtransaction", txid, "1"])
-                if not tx: continue
-                for vout in tx.get("vout", []):
-                    for addr in vout.get("scriptPubKey", {}).get("addresses", []):
-                        seen.add(addr)
+            cbtxid = bl.get("tx", [None])[0]
+            if not cbtxid: continue
+            cbtx, _ = rpc(["getrawtransaction", cbtxid, "1"])
+            if not cbtx: continue
+            for vout in cbtx.get("vout", []):
+                for addr in vout.get("scriptPubKey", {}).get("addresses", []):
+                    seen.add(addr)
+
+        # Merge full-scan addresses from background thread
+        try:
+            if os.path.exists(_FULL_SCAN_FILE):
+                with _full_scan_lock:
+                    with open(_FULL_SCAN_FILE) as f:
+                        seen.update(json.load(f).get("addresses", []))
+        except: pass
 
         # Get balances for all addresses
         balances = {}
