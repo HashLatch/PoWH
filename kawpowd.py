@@ -14,7 +14,7 @@ def rpc_getkawpowhash(header_hash, mix_hash, nonce, height, target):
                 "method": "getkawpowhash",
                 "params": [header_hash, mix_hash, nonce, int(height), target]
             }).encode()
-            creds = base64.b64encode(b"hashlatch:test123").decode()
+            creds = base64.b64encode(b"hashlatch:YOUR_RPC_PASSWORD").decode()
             req = urllib.request.Request(
                 "http://127.0.0.1:8766/",
                 data=payload,
