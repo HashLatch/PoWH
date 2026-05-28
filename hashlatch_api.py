@@ -5,9 +5,9 @@ import subprocess, json, os, hashlib
 app = Flask(__name__)
 CORS(app)
 
-RPC = "/home/dstrychalski/PoWH/src/hashlatch-cli -rpcuser=hashlatch -rpcpassword=test123 -rpcport=8766"
+RPC = "/home/dstrychalski/PoWH/src/hashlatch-cli -rpcuser=YOUR_RPC_USER -rpcpassword=YOUR_RPC_PASSWORD -rpcport=8766"
 WALLETS_FILE = '/home/dstrychalski/.hlc_wallets.json'
-ADMIN_HASH = '93eea3f86bca4dfb4c2838d531dd4fd878c1cfc9b5bfc773292fdf49ab7df328'
+ADMIN_HASH = 'YOUR_ADMIN_HASH'
 
 def cli(cmd):
     out = subprocess.run(f"{RPC} {cmd}", shell=True, capture_output=True, text=True)
@@ -249,7 +249,7 @@ def wallet_from_wif():
         # into a temporary rescan-less import, then getaddressesbyaccount.
         import subprocess
         CLI = ['/home/dstrychalski/PoWH/src/hashlatch-cli',
-               '-rpcuser=hashlatch', '-rpcpassword=test123', '-rpcport=8766']
+               '-rpcuser=YOUR_RPC_USER', '-rpcpassword=YOUR_RPC_PASSWORD', '-rpcport=8766']
         # Validate the WIF format first
         if len(wif) < 50 or len(wif) > 55 or not wif[0] in 'UL9c':
             return jsonify({"error": "Invalid WIF format"}), 400
@@ -302,7 +302,7 @@ def broadcast():
             data=payload,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": "Basic " + __import__("base64").b64encode(b"hashlatch:test123").decode()
+                "Authorization": "Basic " + __import__("base64").b64encode(b"hashlatch:YOUR_RPC_PASSWORD").decode()
             },
             method="POST"
         )
