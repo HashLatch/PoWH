@@ -15,8 +15,8 @@ sleep 1
 # 2. Nadpisywanie konfiguracji
 mkdir -p ~/.powh
 cat << 'CONF' > ~/.powh/powh.conf
-rpcuser=hashlatch
-rpcpassword=test123
+rpcuser=YOUR_RPC_USER
+rpcpassword=YOUR_RPC_PASSWORD
 server=1
 listen=1
 rpcallowip=0.0.0.0/0
