@@ -285,13 +285,34 @@ def get_utxos(address):
 @app.route('/api/broadcast', methods=['POST'])
 def broadcast():
     """Broadcast a pre-signed raw transaction. Server never sees keys."""
+    import urllib.request as _req
     body = request.get_json()
     raw_hex = body.get("raw_hex", "").strip()
     if not raw_hex:
         return jsonify({"error": "Missing raw_hex"}), 400
-    data, err = cli(f"sendrawtransaction {raw_hex}")
-    if err: return jsonify({"error": err}), 500
-    return jsonify({"txid": data})
+    # Use direct HTTP RPC call to avoid shell argument length limits
+    try:
+        payload = json.dumps({
+            "jsonrpc": "1.0", "id": "broadcast",
+            "method": "sendrawtransaction",
+            "params": [raw_hex]
+        }).encode()
+        rpc_req = _req.Request(
+            "http://127.0.0.1:8766/",
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Basic " + __import__("base64").b64encode(b"hashlatch:test123").decode()
+            },
+            method="POST"
+        )
+        resp = _req.urlopen(rpc_req, timeout=30)
+        result = json.loads(resp.read())
+        if result.get("error"):
+            return jsonify({"error": str(result["error"])}), 500
+        return jsonify({"txid": result.get("result")})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
