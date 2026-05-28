@@ -130,7 +130,7 @@ def decode(txid):
     if err: return jsonify({"error": err}), 500
     return jsonify(data)
 
-@app.route('/api/send', methods=['POST'])
+@app.route('/api/send_disabled', methods=['POST'])
 def send():
     body = request.get_json()
     to = body.get("to")
@@ -163,7 +163,7 @@ def transactions(address=None):
                 })
     return jsonify({"transactions": txs[:10]})
 
-@app.route('/api/bounty/create', methods=['POST'])
+@app.route('/api/bounty/create_disabled', methods=['POST'])
 def bounty_create():
     body = request.get_json()
     target_hash = body.get("target_hash")
