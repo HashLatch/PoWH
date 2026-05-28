@@ -37,7 +37,7 @@ jobs:
         mkdir -p hashlatch-windows
         find . -name "hashlatch-cli.exe" -o -name "hashlatchd.exe" | xargs -I{} cp {} hashlatch-windows/
         echo "HashLatch CLI - Windows x64" > hashlatch-windows/README.txt
-        echo "Usage: hashlatch-cli.exe -rpcconnect=34.185.173.154 -rpcport=8766 -rpcuser=hashlatch -rpcpassword=test123 getblockcount" >> hashlatch-windows/README.txt
+        echo "Usage: hashlatch-cli.exe -rpcconnect=34.185.173.154 -rpcport=8766 -rpcuser=YOUR_RPC_USER -rpcpassword=YOUR_RPC_PASSWORD getblockcount" >> hashlatch-windows/README.txt
         echo "Mining pool: stratum+tcp://34.185.173.154:3052" >> hashlatch-windows/README.txt
         zip -r hashlatch-windows-x64.zip hashlatch-windows/
     - uses: actions/upload-artifact@v4
