@@ -36,8 +36,8 @@ var pool = Stratum.createPool({
         {
             "host": "127.0.0.1",
             "port": 8766,
-            "user": "hashlatch",
-            "password": "test123"
+            "user": "YOUR_RPC_USER",
+            "password": "YOUR_RPC_PASSWORD"
         }
     ],
     "p2p": {
