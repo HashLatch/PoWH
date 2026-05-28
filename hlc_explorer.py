@@ -170,13 +170,13 @@ def richlist():
             if not bh: continue
             bl, _ = rpc(["getblock", bh, "1"])
             if not bl: continue
-            cbtxid = bl.get("tx", [None])[0]
-            if not cbtxid: continue
-            cbtx, _ = rpc(["getrawtransaction", cbtxid, "1"])
-            if not cbtx: continue
-            for vout in cbtx.get("vout", []):
-                for addr in vout.get("scriptPubKey", {}).get("addresses", []):
-                    seen.add(addr)
+            # Scan ALL transactions in block (not just coinbase)
+            for txid in bl.get("tx", []):
+                tx, _ = rpc(["getrawtransaction", txid, "1"])
+                if not tx: continue
+                for vout in tx.get("vout", []):
+                    for addr in vout.get("scriptPubKey", {}).get("addresses", []):
+                        seen.add(addr)
 
         # Get balances for all addresses
         balances = {}
