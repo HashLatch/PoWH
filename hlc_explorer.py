@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app)
 
 CLI = "/home/dstrychalski/PoWH/src/hashlatch-cli"
-CLI_ARGS = ["-rpcuser=hashlatch", "-rpcpassword=test123", "-rpcport=8766"]
+CLI_ARGS = ["-rpcuser=YOUR_RPC_USER", "-rpcpassword=YOUR_RPC_PASSWORD", "-rpcport=8766"]
 
 def rpc(cmd):
     try:
