@@ -2,15 +2,70 @@
 """HashLatch Block Explorer — Custom lightweight explorer"""
 from flask import Flask, jsonify, request, render_template_string
 from flask_cors import CORS
-import subprocess, json, time
+import subprocess, json, time, threading, os
 from datetime import datetime
 from collections import defaultdict
 
 app = Flask(__name__)
 CORS(app)
 
+# ─── Background full-tx scanner ───────────────────────────────────────────────
+# Scans ALL transactions (not just coinbase) every 30 minutes
+# Results saved to file so richlist stays fast
+_FULL_SCAN_FILE = "/tmp/hlc_full_addresses.json"
+_full_scan_lock = threading.Lock()
+
+def _full_scan_worker():
+    """Background thread: scan all tx outputs, save unique addresses to file."""
+    while True:
+        try:
+            tip_str, _ = rpc_str(["getblockcount"])
+            tip = int(tip_str) if tip_str else 0
+            
+            # Load existing scan state
+            seen = set()
+            last_scanned = -1
+            if os.path.exists(_FULL_SCAN_FILE):
+                try:
+                    with open(_FULL_SCAN_FILE) as f:
+                        data = json.load(f)
+                        seen = set(data.get("addresses", []))
+                        last_scanned = data.get("last_block", -1)
+                except: pass
+            
+            # Scan new blocks
+            changed = False
+            for h in range(last_scanned + 1, tip + 1):
+                bh, _ = rpc_str(["getblockhash", str(h)])
+                if not bh: continue
+                bl, _ = rpc(["getblock", bh, "1"])
+                if not bl: continue
+                for txid in bl.get("tx", []):
+                    tx, _ = rpc(["getrawtransaction", txid, "1"])
+                    if not tx: continue
+                    for vout in tx.get("vout", []):
+                        for addr in vout.get("scriptPubKey", {}).get("addresses", []):
+                            if addr not in seen:
+                                seen.add(addr)
+                                changed = True
+                last_scanned = h
+            
+            if changed or last_scanned != tip:
+                with _full_scan_lock:
+                    with open(_FULL_SCAN_FILE, "w") as f:
+                        json.dump({"addresses": list(seen), "last_block": last_scanned}, f)
+        except Exception as e:
+            pass
+        
+        time.sleep(1800)  # Run every 30 minutes
+
+# Start background scanner
+_scanner = threading.Thread(target=_full_scan_worker, daemon=True)
+_scanner.start()
+
+
 CLI = "/home/dstrychalski/PoWH/src/hashlatch-cli"
-CLI_ARGS = ["-rpcuser=YOUR_RPC_USER", "-rpcpassword=YOUR_RPC_PASSWORD", "-rpcport=8766"]
+CLI_ARGS = ["-rpcuser=hashlatch", "-rpcpassword=test123", "-rpcport=8766"]
 
 def rpc(cmd):
     try:
