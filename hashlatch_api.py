@@ -7,7 +7,7 @@ CORS(app)
 
 RPC = "/home/dstrychalski/PoWH/src/hashlatch-cli -rpcuser=hashlatch -rpcpassword=test123 -rpcport=8766"
 WALLETS_FILE = '/home/dstrychalski/.hlc_wallets.json'
-ADMIN_HASH = '5256b4864fb49ff968fe6e7b4a8939dbf1070dfbe0910ac9f6c78bb44b5e40ee'
+ADMIN_HASH = '93eea3f86bca4dfb4c2838d531dd4fd878c1cfc9b5bfc773292fdf49ab7df328'
 
 def cli(cmd):
     out = subprocess.run(f"{RPC} {cmd}", shell=True, capture_output=True, text=True)
