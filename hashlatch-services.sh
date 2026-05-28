@@ -5,7 +5,7 @@ export NVM_DIR="$HOME_DIR/.nvm"
 source "$NVM_DIR/nvm.sh" 2>/dev/null
 nvm use 16 2>/dev/null
 
-CLI="$HOME_DIR/PoWH/src/hashlatch-cli -rpcuser=hashlatch -rpcpassword=test123 -rpcport=8766"
+CLI="$HOME_DIR/PoWH/src/hashlatch-cli -rpcuser=YOUR_RPC_USER -rpcpassword=YOUR_RPC_PASSWORD -rpcport=8766"
 
 # Wait for node RPC to be ready (up to 60s)
 for i in $(seq 1 30); do
