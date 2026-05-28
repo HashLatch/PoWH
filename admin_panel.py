@@ -8,14 +8,14 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-ADMIN_PASSWORD_HASH = "93eea3f86bca4dfb4c2838d531dd4fd878c1cfc9b5bfc773292fdf49ab7df328"
+ADMIN_PASSWORD_HASH = "YOUR_ADMIN_PASSWORD_HASH"
 
 def check_password(pw):
     import hashlib
     return hashlib.sha256(pw.encode()).hexdigest() == ADMIN_PASSWORD_HASH
 NODE_DIR = "/home/dstrychalski/PoWH"
 CLI = f"{NODE_DIR}/src/hashlatch-cli"
-CLI_ARGS = ["-rpcuser=hashlatch", "-rpcpassword=test123", "-rpcport=8766"]
+CLI_ARGS = ["-rpcuser=YOUR_RPC_USER", "-rpcpassword=YOUR_RPC_PASSWORD", "-rpcport=8766"]
 WALLETS_FILE = "/home/dstrychalski/.hlc_wallets.json"
 DATA_DIR = "/home/dstrychalski/.powh"
 
@@ -73,7 +73,7 @@ def start_node():
         return "Already running"
     subprocess.Popen([
         f"{NODE_DIR}/src/hashlatchd", "-daemon", "-server",
-        "-rpcuser=hashlatch", "-rpcpassword=test123", "-rpcport=8766",
+        "-rpcuser=YOUR_RPC_USER", "-rpcpassword=YOUR_RPC_PASSWORD", "-rpcport=8766",
         "-rpcallowip=127.0.0.1", "-txindex=1", "-addressindex=1", "-bypassdownload=1",
         "-listen=1", "-port=18767", "-rpcworkqueue=64", "-rpcthreads=4"
     ])
