@@ -8,7 +8,7 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-ADMIN_PASSWORD_HASH = "5256b4864fb49ff968fe6e7b4a8939dbf1070dfbe0910ac9f6c78bb44b5e40ee"
+ADMIN_PASSWORD_HASH = "93eea3f86bca4dfb4c2838d531dd4fd878c1cfc9b5bfc773292fdf49ab7df328"
 
 def check_password(pw):
     import hashlib
