@@ -407,7 +407,7 @@ def get_miners():
                     bl = json.loads(bl_r.stdout.strip())
                     for vout in bl['tx'][0].get('vout', []):
                         for a in vout.get('scriptPubKey', {}).get('addresses', []):
-                            if a != 'ce6KYfjYGUH5dzxXiBLfGEVArWgLRaLF3V':
+                            if a != 'YOUR_DEV_ADDRESS':
                                 blocks_per_addr[a] = blocks_per_addr.get(a, 0) + 1
                 except: pass
             _cache['blocks_data'] = blocks_per_addr
@@ -526,7 +526,7 @@ def network_stats():
                 bl = json.loads(bl_r.stdout.strip())
                 for vout in bl['tx'][0].get('vout', []):
                     for a in vout.get('scriptPubKey', {}).get('addresses', []):
-                        if a != 'ce6KYfjYGUH5dzxXiBLfGEVArWgLRaLF3V':
+                        if a != 'YOUR_DEV_ADDRESS':
                             wallets.add(a)
                             blocks_per_addr[a] = blocks_per_addr.get(a, 0) + 1
             except: pass
